@@ -1,0 +1,88 @@
+{% include("cabecera.html") %}
+
+<!-- Registro Formulario -->
+<div class="caja">
+    <!-- mandar por el metodo POST la FUNCION  -->
+    <form class="form-control" action="crear-registro" method="POST">
+        <!-- Alertas -->
+        <h1>YouPet IA</h1>
+        <h1 class="text-center t">Registro</h1>
+        <!-- Mostrar mensaje de error si existe -->
+        {% if mensaje %}
+        <div class="alert alert-danger" role="alert">
+            {{ mensaje }}
+        </div>
+        {% endif %}
+        <!-- input Nombre -->
+        <div class="form-group">
+            <label for="nombreInput">Nombre</label>
+            <input type="text" class="form-control" id="nombreInput" placeholder="Tu nombre" name="txtNombre" required>
+        </div>
+        <!-- input Correo -->
+        <div class="form-group">
+            <label for="exampleInputEmail1">Correo</label>
+            <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email" name="txtCorreo" required>
+            <small id="emailHelp" class="form-text text-muted">Nunca compartiremos tus datos con nadie más.</small>
+        </div>
+        <!-- input Contraseña -->
+        <div class="form-group">
+            <label for="exampleInputPassword1">Contraseña</label>
+            <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="txtPassword" required>
+        </div>
+        <!-- input Confirmar Contraseña -->
+        <div class="form-group">
+            <label for="confirmPasswordInput">Confirmar Contraseña</label>
+            <input type="password" class="form-control" id="confirmPasswordInput" placeholder="Confirmar Password" name="txtConfirmPassword" required>
+        </div>
+        <!-- Checkbox -->
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="exampleCheck1">
+            <label class="form-check-label" for="exampleCheck1">Soy un humano</label>
+        </div>
+        <!-- Botón de registro -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-success" id="submitButton" disabled>Registrar</button>
+        </div>
+    </form> 
+</div>
+
+<script>
+    // Obtener los elementos del DOM
+    const emailInput = document.getElementById('exampleInputEmail1');
+    const passwordInput = document.getElementById('exampleInputPassword1');
+    const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+    const checkbox = document.getElementById('exampleCheck1');
+    const submitButton = document.getElementById('submitButton');
+    const nombreInput = document.getElementById('nombreInput');
+
+    // Función para validar que el email contenga "@"
+    function validarCorreo() {
+        const emailValue = emailInput.value.trim();
+        return emailValue.includes('@');
+    }
+
+    // Función para validar que las contraseñas coincidan
+    function validarPasswords() {
+        return passwordInput.value === confirmPasswordInput.value;
+    }
+
+    // Función para verificar si los campos están llenos, el checkbox está marcado, y las contraseñas coinciden
+    function validarFormulario() {
+        const emailLleno = validarCorreo();
+        const passwordLleno = passwordInput.value.trim() !== '';
+        const confirmPasswordLleno = confirmPasswordInput.value.trim() !== '';
+        const passwordsCoinciden = validarPasswords();
+        const nombreLleno = nombreInput.value.trim() !== '';
+        const checkboxMarcado = checkbox.checked;
+
+        // Habilitar el botón solo si todos los campos están completos y correctos
+        submitButton.disabled = !(emailLleno && passwordLleno && confirmPasswordLleno && passwordsCoinciden && nombreLleno && checkboxMarcado);
+    }
+
+    // Asignar los eventos a los inputs y checkbox
+    emailInput.addEventListener('input', validarFormulario);
+    passwordInput.addEventListener('input', validarFormulario);
+    confirmPasswordInput.addEventListener('input', validarFormulario);
+    nombreInput.addEventListener('input', validarFormulario);
+    checkbox.addEventListener('change', validarFormulario);
+</script>

@@ -1,59 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CDN para llamar a bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <title>YouPet IA</title>
-</head>
-<body>
-    <style>
-        .caja{
-            margin: 10%;
-            margin-left: 30%;
-            margin-right: 30%;
-        }
-
-    </style>
-
-    {% include ('cabecera.html') %}
-    <!-- Clase caja ayuda a separar-->
-    <div class ="caja">
-        <!-- mandar por el metodo POST la FUNCION  -->
-        <form class="form-control" action="acceso-login" method="POST">
-            <h1>YouPet IA</h1>
-            <h1 class = "text-center t">Login</h1>
-              <!-- Mostrar mensaje de error si existe -->
-              {% if mensaje %}
-              <div class="alert alert-danger" role="alert">
-                  {{ mensaje }}
-              </div>
-              {% endif %}
-              
-            
-            <!-- input -->
-            <div class="form-group">
-              <label for="exampleInputEmail1">Correo </label>
-              <!-- entrada de texto lleva a la función :     namme"txtCorreo" -->
-              <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email" name="txtCorreo">
-              <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
-            </div>
-            <!-- input -->
-            <div class="form-group">
-              <label for="exampleInputPassword1">Contraseña</label>
-              <!-- entrada de texto lleva a la función :     namme"txtPassword" -->
-              <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="txtPassword">
-            </div>
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="exampleCheck1">
-              <label class="form-check-label" for="exampleCheck1">Soy un humano</label>
-            </div>
-            <!-- botòn -->
-            <button type="submit" class="btn btn-primary">Ingresar</button>
-          </form>
+{% include ('cabecera.html') %}
+<!-- Login -->
+<!-- Clase caja ayuda a separar-->
+<div class="caja">
+  <!-- mandar por el metodo POST la FUNCION  -->
+  <form class="form-control" action="acceso-login" method="POST">
+    <!-- Alertas -->
+    <!--------->
+    <h1>YouPet IA</h1>  
+    <h1 class="text-center t">Login</h1>
+    <!-- Mostrar mensaje de error si existe -->
+    {% if mensaje %}
+    <div class="alert alert-danger" role="alert">
+      {{ mensaje }}
     </div>
-     
-</body>
-</html>
+    {% endif %}
+    <!--  Mensaje de registro exitoso -->
+    {% if mensaje2 %}
+    <div class="alert alert-success" role="alert">
+      {{ mensaje2 }}
+    </div>
+    {% endif %}
+    <!-- input -->
+    <div class="form-group">
+      <label for="exampleInputEmail1">Correo </label>
+      <!-- entrada de texto lleva a la función : namme"txtCorreo" -->
+      <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" 
+      placeholder="Tu correo Gmail " name="txtCorreo" required>
+      <small id="emailHelp" class="form-text text-muted">Nunca compartiremos su correo electrónico con nadie más.</small>
+    </div>
+    <!-- input -->
+    <div class="form-group">
+      <label for="exampleInputPassword1">Contraseña</label>
+      <!-- entrada de texto lleva a la función : name"txtPassword" -->
+      <input type="password" class="form-control" id="exampleInputPassword1" 
+      placeholder="Tu contraseña"name="txtPassword" required>
+    </div>
+    <div class="form-check">
+      <input type="checkbox" class="form-check-input" id="Check1" required>
+      <label class="form-check-label" for="Check1">Soy un humano</label>
+    </div>
+    <!-- botòn -->
+    <div class="text-center">
+      <button type="submit" class="btn btn-success" id="submitButton" disabled>Ingresar</button>
+    </div>
+  </form>
+<!-- Fin Login-->
+</div>
+
+<!-- Script para validar formulario de login -->
+<script>
+  // Obtener los elementos del DOM
+  const emailInput = document.getElementById('exampleInputEmail1');
+  const passwordInput = document.getElementById('exampleInputPassword1');
+  const checkbox = document.getElementById('Check1');
+  const submitButton = document.getElementById('submitButton');
+
+  // Función para validar que el email contenga "@"
+  function validarCorreo() {
+      const emailValue = emailInput.value.trim();
+      return emailValue.includes('@');
+  }
+
+  // Función para verificar si los campos están llenos y el checkbox está marcado
+  function validarFormulario() {
+      const emailLleno = validarCorreo(); // Validar que el correo tenga un "@"
+      const passwordLleno = passwordInput.value.trim() !== ''; // Verificar que el campo de contraseña no esté vacío
+      const checkboxMarcado = checkbox.checked; // Verificar si el checkbox está marcado
+
+      // Habilitar el botón solo si todos los campos son válidos
+      submitButton.disabled = !(emailLleno && passwordLleno && checkboxMarcado);
+  }
+
+  // Asignar eventos de validación a los campos de correo, contraseña y checkbox
+  emailInput.addEventListener('input', validarFormulario);
+  passwordInput.addEventListener('input', validarFormulario);
+  checkbox.addEventListener('change', validarFormulario);
+</script>
