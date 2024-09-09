@@ -181,16 +181,19 @@ def crear_registro():
     return render_template('registro.html')
 #-----------
 
-#--- Listar usuarios ------
-@app.route('/listar', methods=["GET", "POST"])
-def listar():
+#--- Listar mascotas ------
+@app.route('/listar_mascotas', methods=["GET"])
+def listar_mascotas():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM usuarios")
-    #preguntar si existe el dato
-    usuarios = cur.fetchall()
+    cur.execute("""
+        SELECT m.id_mascota, m.nombre, m.especie, m.raza, m.edad, u.nombre AS propietario
+        FROM mascotas m
+        JOIN usuarios u ON m.id_usuario = u.id
+    """)
+    mascotas = cur.fetchall()
     cur.close()
 
-    return render_template("listar_usuarios.html", usuarios = usuarios)
+    return render_template("listar_mascotas.html", mascotas=mascotas)
 
 #---------------
 

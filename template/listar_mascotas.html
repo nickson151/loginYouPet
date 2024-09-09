@@ -1,0 +1,42 @@
+{% include("cabecera.html") %}
+
+<h1 class="text-center mt-5 mb-5 text-primary">Lista de Mascotas</h1>
+
+<div class="container">
+    <div class="card shadow">
+        <div class="card-body">
+            <!-- Tabla para mostrar las mascotas -->
+            {% if mascotas %}
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Especie</th>
+                        <th scope="col">Raza</th>
+                        <th scope="col">Edad</th>
+                        <th scope="col">Propietario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mascota in mascotas %}
+                    <tr>
+                        <td scope="row">{{ mascota.id_mascota }}</td>
+                        <td>{{ mascota.nombre }}</td>
+                        <td>{{ mascota.especie }}</td>
+                        <td>{{ mascota.raza }}</td>
+                        <td>{{ mascota.edad }}</td>
+                        <td>{{ mascota.propietario }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No hay datos</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Link para salir -->
+<a href="/" class="btn btn-secondary mt-3">Salir</a>
