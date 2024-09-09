@@ -1,3 +1,4 @@
+#install mysql-connector-python==8.0.29
 #pip3 install Flask
 #pip3 install Flask-MySQLdb
 #pip3 install MySQL
@@ -5,13 +6,16 @@
 #pip3 install virtualenv
 #virtualenv env
 #entorno virtual:          cd env/Scripts
-import re
+from functools import wraps
+from flask import redirect, session, url_for
+from datetime import timedelta
+import re, os
 from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash  # Importar para hacer hashing 
 #activar entorno virtual:  .\activate
 from MySQLdb import IntegrityError  # Importar la excepción
 #llamado archivo 
-from flask import Flask    
+from flask import Flask, url_for    
 #render template:  llama carpeta de funciones
 #redirect: llamados
 #llamar funciones de GET y POST
@@ -28,18 +32,48 @@ app.config['MYSQL_USER']='root'
 app.config['MYSQL_PASSWORD']=''
 app.config['MYSQL_DB']='YouPet'
 app.config['MYSQL_CURSORCLASS']='DictCursor'
-#inicializar mysql
+#inicializar mysql vcb 
 mysql = MySQL(app)
 
 #la  " / "  indica el inicio usuario
 @app.route('/')
 def home():
     return render_template('index.html')
+#-----------------------------------------------
 
 #función para redireccionear a pagina  admin.html
-@app.route('/admin')
+@app.route('/admin', methods=["GET", "POST"])
 def admin():
-    return render_template('admin.html')
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        correo = request.form['correo']
+        password = request.form['password']
+        confirmar_password = request.form['confirmar_password']
+
+        # Validar que las contraseñas coincidan
+        if password != confirmar_password:
+            mensaje = "Las contraseñas no coinciden"
+            return render_template('admin.html', mensaje=mensaje)
+
+        # Insertar el nuevo registro en la base de datos
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            INSERT INTO usuarios (nombre, correo, password, id_rol) 
+            VALUES (%s, %s, %s, '2')
+        """, (nombre, correo, password))
+        mysql.connection.commit()
+        cur.close()
+
+    # Obtener la lista de usuarios para mostrar
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM usuarios")
+    usuarios = cur.fetchall()
+    cur.close()
+
+    return render_template('admin.html', usuarios=usuarios)
+
+
+#---------------------------------------------------
 
 #Funcion de LOGIN que se puso en el metodo POST
 #del FORM Class Action -> route
@@ -56,25 +90,45 @@ def login():
         cur.execute('SELECT * FROM usuarios WHERE correo = %s', (_correo,))
         account = cur.fetchone()
         
-        # Si existe un usuario con el correo ingresado
+        # Si existe un usuario con el correo ya ingresado
         if account:
-            # Verificar la contraseña ingresada con el hash almacenado en la base de datos
-            if check_password_hash(account['password'], _password):
-                # Iniciar la sesión si la contraseña es correcta
-                session['logueado'] = True
-                session['id'] = account['id']
-                session['id_rol'] = account['id_rol']
+            hashed_password = account['password']
 
-                # Redirigir según el rol del usuario
-                if session['id_rol'] == 1:
-                    return render_template("admin.html")
-                elif session['id_rol'] == 2:
-                    return render_template("usuario.html")
-                elif session['id_rol'] == 3:
-                    return render_template("premium.html")
+            # Si la contraseña en la BD es texto plano (usuarios de prueba)
+            if hashed_password in ['Campos20*', '123']:  # Lista de contraseñas de texto plano 
+                if hashed_password == _password:
+                    # Iniciar sesión para usuarios de prueba
+                    session['logueado'] = True
+                    session['id'] = account['id']
+                    session['id_rol'] = account['id_rol']
+
+                    # Redirigir según el rol del usuario
+                    if session['id_rol'] == 1:
+                        return render_template("admin.html")
+                    elif session['id_rol'] == 2:
+                        return render_template("usuario.html")
+                    elif session['id_rol'] == 3:
+                        return render_template("premium.html")
+                else:
+                    return render_template('index.html', mensaje="Usuario o contraseña incorrectos")
             else:
-                # Contraseña incorrecta
-                return render_template('index.html', mensaje="Usuario o contraseña incorrectos")
+                # Para contraseñas hasheadas
+                if check_password_hash(hashed_password, _password):
+                    # Iniciar sesión para usuarios con contraseñas hasheadas
+                    session['logueado'] = True
+                    session['id'] = account['id']
+                    session['id_rol'] = account['id_rol']
+
+                    # Redirigir según el rol del usuario
+                    if session['id_rol'] == 1:
+                        return render_template("admin.html")
+                    elif session['id_rol'] == 2:
+                        return render_template("usuario.html")
+                    elif session['id_rol'] == 3:
+                        return render_template("premium.html")
+                else:
+                    # Contraseña incorrecta
+                    return render_template('index.html', mensaje="Usuario o contraseña incorrectos")
         else:
             # No se encontró ninguna cuenta con ese correo
             return render_template('index.html', mensaje="Usuario o contraseña incorrectos")
@@ -126,6 +180,7 @@ def crear_registro():
 
     return render_template('registro.html')
 #-----------
+
 #--- Listar usuarios ------
 @app.route('/listar', methods=["GET", "POST"])
 def listar():
@@ -136,6 +191,9 @@ def listar():
     cur.close()
 
     return render_template("listar_usuarios.html", usuarios = usuarios)
+
+#---------------
+
 
 #---------------
 

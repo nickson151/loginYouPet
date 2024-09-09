@@ -1,16 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouPet Admin</title>
-</head>
-<body>
-    <h1>
-        Bienvenido admin!!!
-        <!-- apunta a la raiz-->
-        <a href="/">Salir</a>
-    </h1>
-</body>
-</html>
+{% include("cabecera.html") %}
+
+<h1 class="text-center mt-5 mb-5 text-primary">Admin - Gestión de Usuarios</h1>
+
+<div class="container">
+    <div class="card shadow">
+        <div class="card-body">
+            <!-- Mensaje de error si las contraseñas no coinciden -->
+            {% if mensaje %}
+            <div class="alert alert-danger" role="alert">
+                {{ mensaje }}
+            </div>
+            {% endif %}
+
+            <!-- Formulario para agregar un usuario -->
+            <form id="userForm" action="/admin" method="POST">
+                <div class="row mb-3">
+                    <div class="col">
+                        <label>Nombre</label>
+                        <input type="text" class="form-control mb-3" name="nombre" required>
+                    </div>
+                    <div class="col">
+                        <label>Correo</label>
+                        <input type="email" class="form-control mb-3" name="correo" required>
+                    </div>
+                    <div class="col">
+                        <label>Contraseña</label>
+                        <input type="password" class="form-control mb-3" name="password" required>
+                    </div>
+                    <div class="col">
+                        <label>Confirmar Contraseña</label>
+                        <input type="password" class="form-control mb-3" name="confirmar_password" required>
+                    </div>
+                    <div class="col">
+                        <button class="btn btn-primary mb-3 mt-4" type="submit">Guardar</button>
+                        <button type="button" class="btn btn-secondary mb-3 mt-4" onclick="mostrarUsuarios()">Mostrar</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Tabla para mostrar los usuarios -->
+            {% if usuarios %}
+            <table class="table table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Correo</th>
+                        <th scope="col">Contraseña</th>
+                        <th scope="col">Editar</th>
+                        <th scope="col">Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mostrar in usuarios %}
+                    <tr>
+                        <td scope="row">{{ mostrar.id }}</td>
+                        <td>{{ mostrar.nombre }}</td>
+                        <td>{{ mostrar.correo }}</td>
+                        <td>*****</td> <!-- Ocultar contraseñas por razones de seguridad -->
+                        <td><a href="/editar/{{ mostrar.id }}" class="btn btn-primary btn-sm">Editar</a></td>
+                        <td>
+                            <form action="/eliminar/{{ mostrar.id }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No hay datos</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Link para salir -->
+<a href="/" class="btn btn-secondary mt-3">Salir</a>
+
+<script>
+function mostrarUsuarios() {
+    // Enviar una solicitud GET para recargar la lista de usuarios
+    window.location.href = '/admin';
+}
+</script>
