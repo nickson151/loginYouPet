@@ -1,17 +1,298 @@
-{% include("cabecera.html") %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>
-        Bienvenido Usuario
-        <!-- apunta a la raiz-->
-        <a href="/" class="btn btn-secondary mt-3">Salir</a>
-    </h1>
-</body>
-</html>
+{% include('cabecera.html') %}
+
+<div class="container">
+    <!-- Columna izquierda: consejos de cuidado -->
+    <div class="left-column">
+        <h2>Consejos de Cuidado</h2>
+        <div id="adviceContainer">
+            <div id="adviceList">Cargando consejos...</div>
+            <div id="clock">Actualización en: <span id="countdown">15</span> segundos</div>
+        </div>
+    </div>
+
+    <!-- Columna central: Chatbot -->
+    <div class="center-column">
+        <h1>Bienvenido Usuario</h1>
+        <!-- Chatbot HTML -->
+        <div class="chatbot-container" id="chatbotContainer">
+            <div class="chatbot-header">
+                <h3>Chatbot - YouPet</h3>
+            </div>
+            <div class="chatbot-body" id="chatbotBody">
+                <!-- Aquí se mostrarán los mensajes del chatbot -->
+                <div class="chat-message">
+                    Solo puedes hacerme 3 preguntas concretas con los siguientes carteles:
+                </div>
+                <div class="chatbot-options" id="mainOptions">
+                    <!-- Opción Gato -->
+                    <div class="chatbot-option" onclick="seleccionarOpcion('gato')">
+                        Gato
+                    </div>
+                    <!-- Opción Perro -->
+                    <div class="chatbot-option" onclick="seleccionarOpcion('perro')">
+                        Perro
+                    </div>
+                </div>
+                <div class="chatbot-options" id="subOpciones" style="display: none;">
+                    <!-- Subopciones según la selección -->
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..."
+                    onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button onclick="sendMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna derecha: botón PSE y tiendas ficticias -->
+    <div class="right-column">
+        <h2 class="section-title">Realizar Pago</h2>
+        <h5 style="font-weight: bold; text-align: center;">Pasar a YouPet Premium</h5>
+        <a href="/pago-pse" class="btn-pse">Pagar con PSE</a>
+        <h2 class="section-title">Tiendas Aliadas</h2>
+        <div class="store-buttons">
+            <a href="/veterinaria1" class="btn-store">Veterinaria A</a>
+            <a href="/veterinaria2" class="btn-store">Veterinaria B</a>
+            <a href="/tienda1" class="btn-store">Tienda de Mascotas</a>
+        </div>
+    </div>
+</div>
+<a href="/" class="btn btn-secondary mt-3">Salir</a>
+<br><br>
+<script>
+    function seleccionarOpcion(animal) {
+        const subOpcionesDiv = document.getElementById('subOpciones');
+        const mainOptionsDiv = document.getElementById('mainOptions');
+
+        mainOptionsDiv.style.display = 'none'; // Ocultar opciones principales
+        subOpcionesDiv.style.display = 'grid'; // Mostrar subopciones
+
+        let opcionesHTML = '';
+
+        if (animal === 'gato') {
+            opcionesHTML = `
+                <div class="chatbot-option" onclick="mostrarResultado('Gato enfermo')">Está enfermo</div>
+                <div class="chatbot-option" onclick="mostrarResultado('Gato sano')">Está sano</div>
+            `;
+        } else if (animal === 'perro') {
+            opcionesHTML = `
+                <div class="chatbot-option" onclick="mostrarResultado('Perro enfermo')">Está enfermo</div>
+                <div class="chatbot-option" onclick="mostrarResultado('Perro sano')">Está sano</div>
+            `;
+        }
+
+        subOpcionesDiv.innerHTML = opcionesHTML;
+    }
+
+    function mostrarResultado(resultado) {
+        const chatbotBody = document.getElementById('chatbotBody');
+        chatbotBody.innerHTML += `<div class="chat-message">${resultado}</div>`;
+        document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
+        document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
+    }
+
+    function sendMessage() {
+        const userInput = document.getElementById('userInput').value;
+        if (userInput.trim() !== '') {
+            document.getElementById('chatbotBody').innerHTML += `<div class="chat-message">Tú: ${userInput}</div>`;
+            document.getElementById('userInput').value = ''; // Limpiar campo de entrada
+        }
+    }
+
+    // Lista de consejos
+    const adviceMessages = [
+        "Asegúrate de que tu perro tenga un lugar cómodo para descansar.",
+        "Los gatos necesitan rascadores para mantener sus garras saludables.",
+        "Recuerda desparasitar a tus mascotas regularmente.",
+        "Mantén siempre agua fresca disponible para tu mascota.",
+        "Proporciona juguetes interactivos para mantener a tu mascota entretenida.",
+        "Lleva a tus mascotas al veterinario para chequeos regulares.",
+        "Mantén una dieta balanceada para la salud de tu mascota.",
+        "Cepilla el pelaje de tu mascota regularmente para evitar enredos."
+    ];
+
+    function getRandomAdvice() {
+        // Obtener 3 consejos aleatorios sin repetir
+        let shuffled = adviceMessages.sort(() => 0.5 - Math.random());
+        let selected = shuffled.slice(0, 3);
+        return selected;
+    }
+
+    function displayAdvice() {
+        const adviceList = document.getElementById('adviceList');
+        const advices = getRandomAdvice();
+
+        adviceList.innerHTML = advices.map(advice => `<p>${advice}</p>`).join('');
+    }
+
+    function startClock() {
+        const countdownElement = document.getElementById('countdown');
+        let timeLeft = 15;
+
+        function updateClock() {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                // Actualizar los consejos cada 30 segundos
+                displayAdvice();
+                timeLeft = 15;
+            }
+        }
+
+        setInterval(updateClock, 1000);
+        displayAdvice(); // Mostrar los consejos al cargar la página
+    }
+
+    startClock();
+</script>
+
+<style>
+    .container {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .left-column, .center-column, .right-column {
+        padding: 20px;
+        background-color: #FFF3E0;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .left-column {
+        background-color: #FFE0B2;
+    }
+
+    .center-column {
+        position: relative;
+    }
+
+    .chatbot-container {
+        position: relative;
+        border: 2px solid #FF9800;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        background-color: #FFF3E0;
+        z-index: 1000;
+    }
+
+    .chatbot-header {
+        background-color: #FF9800;
+        color: white;
+        padding: 12px;
+        border-radius: 12px 12px 0 0;
+        text-align: center;
+    }
+
+    .chatbot-body {
+        height: 320px;
+        padding: 12px;
+        background-color: #FFF3E0;
+        overflow-y: auto;
+    }
+
+    .chatbot-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .chatbot-option {
+        background-color: #FFE0B2;
+        border: 2px solid #FF9800;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        font-family: Arial, sans-serif;
+    }
+
+    .chatbot-option:hover {
+        background-color: #FF9800;
+        color: white;
+    }
+
+    .chatbot-input {
+        display: flex;
+        padding: 12px;
+        border-top: 2px solid #FF9800;
+        background-color: #FFE0B2;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .chatbot-input input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #FF9800;
+        border-radius: 4px;
+        margin-right: 10px;
+    }
+
+    .chatbot-input button {
+        background-color: #FF9800;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .chatbot-input button:hover {
+        background-color: #E68A00;
+    }
+
+    #adviceList p {
+        margin: 0;
+        padding: 10px;
+        background-color: #FFE0B2;
+        border-radius: 5px;
+        border: 1px solid #FF9800;
+    }
+
+    #clock {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #FF9800;
+    }
+
+    /* Estilos para la columna derecha */
+    .right-column {
+        background-color: #FFF3E0;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-title {
+        color: #FF9800;
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+
+    .btn-pse, .btn-store {
+        display: block;
+        background-color: #FF9800;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        text-decoration: none;
+        margin-bottom: 10px;
+        font-weight: bold;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s, transform 0.3s;
+    }
+
+    .btn-pse:hover, .btn-store:hover {
+        background-color: #E68A00;
+        transform: scale(1.05);
+    }
+
+    .store-buttons a {
+        display: block;
+    }
+</style>

@@ -1,124 +1,291 @@
-{% include("cabecera.html") %}
+{% include('cabecera.html') %}
 
-<h1 class="text-center mt-5 mb-5 text-primary">Gestión de Usuarios Premium</h1>
+<!-- Contenedor para el contenido principal -->
+<div class="main-content">
+    <h1>Bienvenido Usuario Premium</h1>
 
-<div class="container">
-    <div class="card shadow">
-        <div class="card-body">
-            <!-- Mensaje de error si las contraseñas no coinciden -->
-            {% if mensaje %}
-            <div class="alert alert-danger" role="alert">
-                {{ mensaje }}
-            </div>
-            {% endif %}
-
-            <!-- Formulario para agregar un usuario premium -->
-            <form id="premiumForm" action="/premium" method="POST" onsubmit="return validarFormulario()">
-                <div class="row mb-3">
-                    <div class="col">
-                        <label>Nombre</label>
-                        <input type="text" class="form-control mb-3" name="nombre" id="nombre" required>
-                    </div>
-                    <div class="col">
-                        <label>Correo</label>
-                        <input type="email" class="form-control mb-3" name="correo" id="correo" required>
-                    </div>
-                    <div class="col">
-                        <label>Contraseña</label>
-                        <input type="password" class="form-control mb-3" name="password" id="password" required>
-                    </div>
-                    <div class="col">
-                        <label>Confirmar Contraseña</label>
-                        <input type="password" class="form-control mb-3" name="confirmar_password" id="confirmar_password" required>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-primary mb-3 mt-4" type="submit">Guardar</button>
-                        <button type="button" class="btn btn-secondary mb-3 mt-4" onclick="mostrarUsuarios()">Mostrar</button>
-                    </div>
+    <h1 class="text-center mt-5 mb-5 text-primary">Gestión de Mascotas</h1>
+    <div class="container">
+        <div class="card shadow">
+            <div class="card-body">
+                <!-- Mensaje de error o éxito -->
+                {% if mensaje %}
+                <div class="alert alert-danger" role="alert">
+                    {{ mensaje }}
                 </div>
-            </form>
+                {% endif %}
 
-            <!-- Tabla para mostrar los usuarios premium -->
-            {% if usuarios %}
-            <table class="table table-bordered">
-                <thead class="table-dark">
-                    <tr>
-                        <th scope="col">ID</th>
-                        <th scope="col">Nombre</th>
-                        <th scope="col">Correo</th>
-                        <th scope="col">Contraseña</th>
-                        <th scope="col">Editar</th>
-                        <th scope="col">Eliminar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for mostrar in usuarios %}
-                    <tr>
-                        <td scope="row">{{ mostrar.id }}</td>
-                        <td>{{ mostrar.nombre }}</td>
-                        <td>{{ mostrar.correo }}</td>
-                        <td>*****</td> <!-- Ocultar contraseñas por razones de seguridad -->
-                        <td><a href="/editar-premium/{{ mostrar.id }}" class="btn btn-primary btn-sm">Editar</a></td>
-                        <td>
-                            <form action="/eliminar-premium/{{ mostrar.id }}" method="POST" style="display:inline;" onsubmit="return confirmarEliminacion()">
-                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p>No hay datos</p>
-            {% endif %}
+                <!-- Formulario para agregar una mascota -->
+                <form id="petForm" action="/mascotas" method="POST">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label>Nombre</label>
+                            <input type="text" class="form-control mb-3" name="nombre" required>
+                        </div>
+                        <div class="col">
+                            <label>Especie</label>
+                            <input type="text" class="form-control mb-3" name="especie" required>
+                        </div>
+                        <div class="col">
+                            <label>Edad</label>
+                            <input type="number" class="form-control mb-3" name="edad" required>
+                        </div>
+                        <div class="col">
+                            <button class="btn btn-primary mb-3 mt-4" type="submit">Guardar</button>
+                            <button type="button" class="btn btn-secondary mb-3 mt-4"
+                                onclick="mostrarMascotas()">Mostrar</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Tabla para mostrar las mascotas -->
+                {% if mascotas %}
+                <table class="table table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Especie</th>
+                            <th scope="col">Edad</th>
+                            <th scope="col">Editar</th>
+                            <th scope="col">Eliminar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mascota in mascotas %}
+                        <tr>
+                            <td scope="row">{{ mascota.id }}</td>
+                            <td>{{ mascota.nombre }}</td>
+                            <td>{{ mascota.especie }}</td>
+                            <td>{{ mascota.edad }}</td>
+                            <td><a href="/editar-mascota/{{ mascota.id }}" class="btn btn-primary btn-sm">Editar</a></td>
+                            <td>
+                                <form action="/eliminar-mascota/{{ mascota.id }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>No hay mascotas registradas</p>
+                {% endif %}
+            </div>
         </div>
+    </div>
+
+    <!-- Iconos debajo de la tabla -->
+    <div class="icons-container">
+        <a href="#" class="btn btn-primary">Agregar PDF</a>
+        <a href="#" class="btn btn-primary">Agregar Foto</a>
+    </div>
+
+    <a href="/" class="btn btn-secondary mt-3">Salir</a>
+</div>
+
+<!-- Chatbot HTML -->
+<div class="chatbot-container" id="chatbotContainer">
+    <div class="chatbot-header">
+        <h3>Chatbot - YouPet Premium</h3>
+    </div>
+    <div class="chatbot-body" id="chatbotBody">
+        <!-- Aquí se mostrarán los mensajes del chatbot -->
+        <div class="chat-message">
+            Requiero enseñarte como plantearme las preguntas:
+        </div>
+        <div class="chatbot-options" id="mainOptions">
+            <!-- Opción Gato -->
+            <div class="chatbot-option" onclick="seleccionarOpcion('gato')">
+                Gato
+            </div>
+            <!-- Opción Perro -->
+            <div class="chatbot-option" onclick="seleccionarOpcion('perro')">
+                Perro
+            </div>
+        </div>
+        <div class="chatbot-options" id="subOpciones" style="display: none;">
+            <!-- Subopciones según la selección -->
+        </div>
+    </div>
+    <div class="chatbot-input">
+        <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..."
+            onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button onclick="sendMessage()">Enviar</button>
     </div>
 </div>
 
-<!-- Link para salir -->
-<a href="/" class="btn btn-secondary mt-3">Salir</a>
-
 <script>
-function mostrarUsuarios() {
-    // Enviar una solicitud GET para recargar la lista de usuarios
-    window.location.href = '/premium';
-}
-function confirmarEliminacion() {
-    return confirm("¿Estás seguro de que deseas eliminar este registro?");
-}
-function validarFormulario() {
-    // Obtener los valores de los campos
-    var nombre = document.getElementById('nombre').value.trim();
-    var correo = document.getElementById('correo').value.trim();
-    var password = document.getElementById('password').value;
-    var confirmarPassword = document.getElementById('confirmar_password').value;
-    
-    // Validar que los campos no estén vacíos
-    if (nombre === '' || correo === '' || password === '' || confirmarPassword === '') {
-        alert("Todos los campos deben ser llenados.");
-        return false;
+    function mostrarMascotas() {
+        // Enviar una solicitud GET para recargar la lista de mascotas
+        window.location.href = '/mascotas';
     }
 
-    // Validar formato del correo electrónico
-    var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(correo)) {
-        alert("El correo electrónico ingresado no es válido.");
-        return false;
+    function confirmarEliminacion() {
+        // Confirmar antes de eliminar una mascota
+        return confirm("¿Estás seguro de que deseas eliminar esta mascota?");
     }
 
-    // Validar que las contraseñas coincidan
-    if (password !== confirmarPassword) {
-        alert("Las contraseñas no coinciden.");
-        return false;
+    function validarFormulario() {
+        // Obtener los valores de los campos
+        var nombre = document.getElementById('nombre').value.trim();
+        var especie = document.getElementById('especie').value.trim();
+        var edad = document.getElementById('edad').value;
+
+        // Validar que los campos obligatorios estén llenos
+        if (nombre === '' || especie === '' || edad === '') {
+            alert("Todos los campos obligatorios deben ser llenados.");
+            return false;
+        }
+
+        // Validar que la edad sea un número positivo
+        if (isNaN(edad) || edad <= 0) {
+            alert("La edad debe ser un número positivo.");
+            return false;
+        }
+
+        // Confirmación antes de enviar el formulario
+        return confirm("¿Estás seguro de que deseas guardar los cambios?");
     }
 
-    // Validar longitud mínima de la contraseña
-    if (password.length < 8) {
-        alert("La contraseña debe tener al menos 8 caracteres.");
-        return false;
+    function seleccionarOpcion(animal) {
+        const subOpcionesDiv = document.getElementById('subOpciones');
+        const mainOptionsDiv = document.getElementById('mainOptions');
+
+        mainOptionsDiv.style.display = 'none'; // Ocultar opciones principales
+        subOpcionesDiv.style.display = 'grid'; // Mostrar subopciones
+
+        let opcionesHTML = '';
+
+        if (animal === 'gato') {
+            opcionesHTML = `
+        <div class="chatbot-option" onclick="mostrarResultado('Gato enfermo')">Está enfermo</div>
+        <div class="chatbot-option" onclick="mostrarResultado('Gato sano')">Está sano</div>
+        `;
+        } else if (animal === 'perro') {
+            opcionesHTML = `
+        <div class="chatbot-option" onclick="mostrarResultado('Perro enfermo')">Está enfermo</div>
+        <div class="chatbot-option" onclick="mostrarResultado('Perro sano')">Está sano</div>
+        `;
+        }
+
+        subOpcionesDiv.innerHTML = opcionesHTML;
     }
 
-    // Si todas las validaciones pasan
-    return true;
-}
+    function mostrarResultado(resultado) {
+        const chatbotBody = document.getElementById('chatbotBody');
+        chatbotBody.innerHTML += `<div class="chat-message">${resultado}</div>`;
+        document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
+        document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
+    }
+
+    function sendMessage() {
+        const userInput = document.getElementById('userInput').value;
+        if (userInput.trim() !== '') {
+            document.getElementById('chatbotBody').innerHTML += `<div class="chat-message">Tú: ${userInput}</div>`;
+            document.getElementById('userInput').value = ''; // Limpiar campo de entrada
+        }
+    }
 </script>
+<style>
+    .main-content {
+        margin-right: 400px; /* Espacio reservado para el chatbot */
+    }
+
+    .chatbot-container {
+        position: fixed;
+        bottom: 50px;
+        right: 20px;
+        /* Cambiado de left a right */
+        width: 350px;
+        border: 2px solid #FF9800;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        background-color: #FFF3E0;
+        z-index: 1000;
+    }
+
+    .chatbot-header {
+        background-color: #FF9800;
+        color: white;
+        padding: 12px;
+        border-radius: 12px 12px 0 0;
+        text-align: center;
+    }
+
+    .chatbot-body {
+    height: 320px;
+    padding: 12px;
+    background-color: #FFF3E0; /* Color de fondo válido */
+    overflow-y: auto;
+}
+    .chatbot-options {
+        display: grid;
+        gap: 10px;
+    }
+
+    .chatbot-option {
+        background-color: #FF9800;
+        color: white;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .chatbot-option:hover {
+        background-color: #F57C00;
+    }
+
+    .chatbot-input {
+        display: flex;
+        padding: 10px;
+        background-color: #FF9800;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .chatbot-input input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        margin-right: 10px;
+    }
+
+    .chatbot-input button {
+        background-color: white;
+        color: #FF9800;
+        border: none;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .chatbot-input button:hover {
+        background-color: #FFCC80;
+    }
+
+    .chat-message {
+        margin-bottom: 10px;
+    }
+
+    .icons-container {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+    }
+
+    .icons-container a {
+        background-color: #FF9800;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        text-align: center;
+    }
+
+    .icons-container a:hover {
+        background-color: #F57C00;
+    }
+</style>
+
