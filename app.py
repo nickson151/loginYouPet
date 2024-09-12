@@ -17,11 +17,12 @@ from MySQLdb import IntegrityError  # Importar la excepción
 #llamado archivo 
 from flask import Flask, url_for    
 #render template:  llama carpeta de funciones
+import mysql.connector
 #redirect: llamados
 #llamar funciones de GET y POST
 from flask import  render_template, redirect, request, Response, session
 # llamada a la BD
-from flask_mysqldb import MySQL, MySQLdb  
+from flask_mysqldb import MySQL, MySQLdb
 
 #llamar a carpeta funcion Template  
 # BD login, name:entrada
@@ -72,7 +73,87 @@ def admin():
 
     return render_template('admin.html', usuarios=usuarios)
 
+#--------- Editar usuario
+@app.route('/editar/<int:id>', methods=["GET", "POST"])
+def editar_usuario(id):
+    cur = mysql.connection.cursor()
+    
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        correo = request.form['correo']
+        password = request.form['password']
+        confirmar_password = request.form['confirmar_password']
+        
+        if password != confirmar_password:
+            mensaje = "Las contraseñas no coinciden"
+            return render_template('editar_usuario.html', mensaje=mensaje, id=id)
+        
+        cur.execute("""
+            UPDATE usuarios
+            SET nombre = %s, correo = %s, password = %s
+            WHERE id = %s
+        """, (nombre, correo, password, id))
+        mysql.connection.commit()
+        cur.close()
+        
+        return redirect('/admin')
+    
+    cur.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
+    usuario = cur.fetchone()
+    cur.close()
+    
+    return render_template('editar_usuario.html', usuario=usuario)
 
+#---- eliminar usuario
+@app.route('/eliminar/<int:id>', methods=["POST"])
+def eliminar_usuario(id):
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect('/admin')
+
+#------ editar mascota
+@app.route('/editar-mascota/<int:id>', methods=["GET", "POST"])
+def editar_mascota(id):
+    cur = mysql.connection.cursor()
+    
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        especie = request.form['especie']
+        edad = request.form['edad']
+        raza = request.form['raza']
+        id_usuario = request.form['id_usuario']
+        
+        cur.execute("""
+            UPDATE mascotas
+            SET nombre = %s, especie = %s, edad = %s, raza = %s, id_usuario = %s
+            WHERE id_mascota = %s
+        """, (nombre, especie, edad, raza, id_usuario, id))
+        mysql.connection.commit()
+        cur.close()
+        
+        return redirect('/listar-mascotas')
+    
+    cur.execute("SELECT * FROM mascotas WHERE id_mascota = %s", (id,))
+    mascota = cur.fetchone()
+    cur.execute("SELECT * FROM usuarios")
+    usuarios = cur.fetchall()
+    cur.close()
+    
+    return render_template('editar_mascota.html', mascota=mascota, usuarios=usuarios)
+
+#------ eliminar mascota
+@app.route('/eliminar-mascota/<int:id>', methods=["POST"])
+def eliminar_mascota(id):
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM mascotas WHERE id_mascota = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect('/listar_mascotas')
+
+#---------------------------------------------------
+#---------------------------------------------------
 #---------------------------------------------------
 
 #Funcion de LOGIN que se puso en el metodo POST
@@ -132,7 +213,7 @@ def login():
         else:
             # No se encontró ninguna cuenta con ese correo
             return render_template('index.html', mensaje="Usuario o contraseña incorrectos")
-
+    
 #registro
 @app.route('/registro')
 def registro():
@@ -174,9 +255,13 @@ def crear_registro():
 
             return render_template("index.html", mensaje2="Registro exitoso")
 
-        except IntegrityError:
-            # Manejar la excepción cuando el correo ya existe
-            return render_template('registro.html', mensaje="El correo ya está registrado")
+        except IntegrityError as e:
+            if "Duplicate entry" in str(e):
+                return render_template('registro.html', mensaje="El correo ya está registrado.")
+            else:
+                # Loguear el error inesperado para futura referencia
+                app.logger.error(f"Error inesperado: {str(e)}")
+                return render_template('registro.html', mensaje="El correo ya está registrado.")
 
     return render_template('registro.html')
 #-----------

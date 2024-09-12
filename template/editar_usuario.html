@@ -1,0 +1,82 @@
+{% include("cabecera.html") %}
+
+<h1 class="text-center mt-5 mb-5 text-primary">Editar Usuario</h1>
+
+<div class="container">
+    <div class="card shadow">
+        <div class="card-body">
+            <!-- Mensaje de error si las contraseñas no coinciden -->
+            {% if mensaje %}
+            <div class="alert alert-danger" role="alert">
+                {{ mensaje }}
+            </div>
+            {% endif %}
+
+            <!-- Formulario para editar un usuario -->
+            <form id="editUserForm" action="/editar/{{ usuario.id }}" method="POST" onsubmit="return validarFormulario()">
+                <div class="row mb-3">
+                    <div class="col">
+                        <label>Nombre</label>
+                        <input type="text" class="form-control mb-3" name="nombre" id="nombre" value="{{ usuario.nombre }}" required>
+                    </div>
+                    <div class="col">
+                        <label>Correo</label>
+                        <input type="email" class="form-control mb-3" name="correo" id="correo" value="{{ usuario.correo }}" required>
+                    </div>
+                    <div class="col">
+                        <label>Contraseña</label>
+                        <input type="password" class="form-control mb-3" name="password" id="password" required>
+                    </div>
+                    <div class="col">
+                        <label>Confirmar Contraseña</label>
+                        <input type="password" class="form-control mb-3" name="confirmar_password" id="confirmar_password" required>
+                    </div>
+                    <div class="col">
+                        <button class="btn btn-primary mb-3 mt-4" type="submit">Guardar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Link para cancelar -->
+<a href="/admin" class="btn btn-secondary mt-3">Cancelar</a>
+
+<script>
+function validarFormulario() {
+    // Obtener los valores de los campos
+    var nombre = document.getElementById('nombre').value.trim();
+    var correo = document.getElementById('correo').value.trim();
+    var password = document.getElementById('password').value;
+    var confirmarPassword = document.getElementById('confirmar_password').value;
+    
+    // Validar que los campos no estén vacíos
+    if (nombre === '' || correo === '' || password === '' || confirmarPassword === '') {
+        alert("Todos los campos deben ser llenados.");
+        return false;
+    }
+
+    // Validar formato del correo electrónico
+    var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(correo)) {
+        alert("El correo electrónico ingresado no es válido.");
+        return false;
+    }
+
+    // Validar que las contraseñas coincidan
+    if (password !== confirmarPassword) {
+        alert("Las contraseñas no coinciden.");
+        return false;
+    }
+
+    // Validar longitud mínima de la contraseña
+    if (password.length < 8) {
+        alert("La contraseña debe tener al menos 8 caracteres.");
+        return false;
+    }
+
+    // Confirmación antes de enviar el formulario
+    return confirm("¿Estás seguro de que deseas guardar los cambios?");
+}
+</script>

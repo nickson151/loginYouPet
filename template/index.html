@@ -1,4 +1,36 @@
 {% include ('cabecera.html') %}
+
+<!-- Chatbot HTML -->
+<div class="chatbot-container" id="chatbotContainer">
+  <div class="chatbot-header">
+    <h3>Chatbot - YouPet</h3>
+  </div>
+  <div class="chatbot-body" id="chatbotBody">
+    <!-- Aquí se mostrarán los mensajes del chatbot -->
+    <div class="chat-message">
+      Solo puedes hacerme 3 preguntas concretas con los siguientes carteles:
+    </div>
+    <div class="chatbot-options" id="mainOptions">
+      <!-- Opción Gato -->
+      <div class="chatbot-option" onclick="seleccionarOpcion('gato')">
+        Gato
+      </div>
+      <!-- Opción Perro -->
+      <div class="chatbot-option" onclick="seleccionarOpcion('perro')">
+        Perro
+      </div>
+    </div>
+    <div class="chatbot-options" id="subOpciones" style="display: none;">
+      <!-- Subopciones según la selección -->
+    </div>
+  </div>
+  <div class="chatbot-input">
+    <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..." onkeypress="if(event.key === 'Enter') sendMessage()">
+    <button onclick="sendMessage()">Enviar</button>
+  </div>
+</div>
+
+
 <!-- Login -->
 <!-- Clase caja ayuda a separar-->
 <div class="caja">
@@ -75,4 +107,127 @@
   emailInput.addEventListener('input', validarFormulario);
   passwordInput.addEventListener('input', validarFormulario);
   checkbox.addEventListener('change', validarFormulario);
+
+  function seleccionarOpcion(animal) {
+    const subOpcionesDiv = document.getElementById('subOpciones');
+    const mainOptionsDiv = document.getElementById('mainOptions');
+    
+    mainOptionsDiv.style.display = 'none'; // Ocultar opciones principales
+    subOpcionesDiv.style.display = 'grid'; // Mostrar subopciones
+
+    let opcionesHTML = '';
+    
+    if (animal === 'gato') {
+      opcionesHTML = `
+        <div class="chatbot-option" onclick="mostrarResultado('Gato enfermo')">Está enfermo</div>
+        <div class="chatbot-option" onclick="mostrarResultado('Gato sano')">Está sano</div>
+      `;
+    } else if (animal === 'perro') {
+      opcionesHTML = `
+        <div class="chatbot-option" onclick="mostrarResultado('Perro enfermo')">Está enfermo</div>
+        <div class="chatbot-option" onclick="mostrarResultado('Perro sano')">Está sano</div>
+      `;
+    }
+
+    subOpcionesDiv.innerHTML = opcionesHTML;
+  }
+
+  function mostrarResultado(resultado) {
+    const chatbotBody = document.getElementById('chatbotBody');
+    chatbotBody.innerHTML += `<div class="chat-message">${resultado}</div>`;
+    document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
+    document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
+  }
+
+  function sendMessage() {
+    const userInput = document.getElementById('userInput').value;
+    if (userInput.trim() !== '') {
+      document.getElementById('chatbotBody').innerHTML += `<div class="chat-message">Tú: ${userInput}</div>`;
+      document.getElementById('userInput').value = ''; // Limpiar campo de entrada
+    }
+  }
 </script>
+
+<style>
+  .chatbot-container {
+    position: fixed;
+    bottom: 50px;
+    left: 20px; 
+    width: 350px;
+    border: 2px solid #FF9800;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background-color: #FFF3E0;
+    z-index: 1000;
+  }
+
+  .chatbot-header {
+    background-color: #FF9800;
+    color: white;
+    padding: 12px;
+    border-radius: 12px 12px 0 0;
+    text-align: center;
+  }
+
+  .chatbot-body {
+    height: 320px;
+    padding: 12px;
+    background-color: #FFF3E0;
+    overflow-y: auto;
+  }
+
+  .chatbot-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .chatbot-option {
+    background-color: #FFE0B2;
+    border: 2px solid #FF9800;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+  }
+
+  .chatbot-option:hover {
+    background-color: #FF9800;
+    color: white;
+  }
+
+  .chatbot-input {
+    display: flex;
+    padding: 12px;
+    border-top: 2px solid #FF9800;
+    background-color: #FFE0B2;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .chatbot-input input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #FF9800;
+    border-radius: 8px;
+    background-color: #FFFFFF;
+    color: #FF9800;
+  }
+
+  .chatbot-input button {
+    margin-left: 8px;
+    padding: 8px 16px;
+    background-color: #FF9800;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .chat-message {
+    margin-bottom: 10px;
+    font-family: Arial, sans-serif;
+    color: #333;
+  }
+</style>
