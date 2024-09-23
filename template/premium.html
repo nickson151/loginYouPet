@@ -2,6 +2,7 @@
 
 <!-- Contenedor para el contenido principal -->
 <div class="main-content">
+    <br>
     <h1>Bienvenido Usuario Premium</h1>
 
     <h1 class="text-center mt-5 mb-5 text-primary">Gestión de Mascotas</h1>
@@ -81,7 +82,7 @@
         <a href="#" class="btn btn-primary">Agregar Foto</a>
     </div>
 
-    <a href="/" class="btn btn-secondary mt-3">Salir</a>
+    
 </div>
 
 <!-- Chatbot HTML -->
@@ -114,6 +115,7 @@
         <button onclick="sendMessage()">Enviar</button>
     </div>
 </div>
+{% include 'footer.html' %}
 
 <script>
     function mostrarMascotas() {
@@ -188,9 +190,15 @@
     }
 </script>
 <style>
-    .main-content {
-        margin-right: 400px; /* Espacio reservado para el chatbot */
+    footer {
+    z-index: 1; /* Asegura que el footer esté detrás del chatbot */
     }
+
+    .main-content {
+    margin-right: 300px; /* Espacio reservado para el chatbot */
+    margin-bottom: 100px; /* Espacio para el footer */
+    }
+
 
     .chatbot-container {
         position: fixed;
@@ -214,7 +222,7 @@
     }
 
     .chatbot-body {
-    height: 320px;
+    height: 300px;
     padding: 12px;
     background-color: #FFF3E0; /* Color de fondo válido */
     overflow-y: auto;

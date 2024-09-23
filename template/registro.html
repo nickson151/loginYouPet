@@ -47,6 +47,14 @@
 </div>
 
 <script>
+    //desactivar el boton de listar_mascotas
+    window.onload = function() {
+        const submitButton = document.getElementById('submitButton');
+        // Desactivar el botón al cargar la página
+        submitButton.disabled = true; // Desactiva el botón
+        submitButton.classList.add('disabled'); // Agrega clase para deshabilitar visualmente
+        submitButton.style.pointerEvents = 'none'; // Desactiva los eventos del botón
+    };
     // Obtener los elementos del DOM
     const emailInput = document.getElementById('exampleInputEmail1');
     const passwordInput = document.getElementById('exampleInputPassword1');

@@ -1,5 +1,4 @@
 {% include ('cabecera.html') %}
-
 <!-- Chatbot HTML -->
 <div class="chatbot-container" id="chatbotContainer">
   <div class="chatbot-header">
@@ -81,6 +80,14 @@
 
 <!-- Script para validar formulario de login -->
 <script>
+  //desactivar el botón "Listar mascotas
+  window.onload = function() {
+    // Desactivar el botón de Listar mascotas
+    const listarButton = document.getElementById('listarMascotas');
+    if (listarButton) {
+      listarButton.disabled = true; // Desactiva el botón
+    }
+  };
   // Obtener los elementos del DOM
   const emailInput = document.getElementById('exampleInputEmail1');
   const passwordInput = document.getElementById('exampleInputPassword1');

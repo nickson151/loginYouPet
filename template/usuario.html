@@ -1,6 +1,6 @@
 {% include('cabecera.html') %}
-
 <div class="container">
+    
     <!-- Columna izquierda: consejos de cuidado -->
     <div class="left-column">
         <h2>Consejos de Cuidado</h2>
@@ -58,8 +58,9 @@
         </div>
     </div>
 </div>
-<a href="/" class="btn btn-secondary mt-3">Salir</a>
-<br><br>
+<br>
+{% include 'footer.html' %}
+
 <script>
     function seleccionarOpcion(animal) {
         const subOpcionesDiv = document.getElementById('subOpciones');
@@ -152,7 +153,7 @@
         display: grid;
         grid-template-columns: 1fr 2fr 1fr;
         gap: 20px;
-        padding: 20px;
+        padding: 0px;
     }
 
     .left-column, .center-column, .right-column {
@@ -295,4 +296,6 @@
     .store-buttons a {
         display: block;
     }
+
+
 </style>

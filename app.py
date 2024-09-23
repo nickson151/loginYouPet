@@ -1,4 +1,5 @@
-#install mysql-connector-python==8.0.29
+#pip3 install Flask pyswip
+#pip3 install pyswip 
 #pip3 install Flask
 #pip3 install Flask-MySQLdb
 #pip3 install MySQL
@@ -15,7 +16,7 @@ from werkzeug.security import generate_password_hash  # Importar para hacer hash
 #activar entorno virtual:  .\activate
 from MySQLdb import IntegrityError  # Importar la excepción
 #llamado archivo 
-from flask import Flask, url_for    
+from flask import Flask, flash, url_for, jsonify    
 #render template:  llama carpeta de funciones
 import mysql.connector
 #redirect: llamados
@@ -23,10 +24,22 @@ import mysql.connector
 from flask import  render_template, redirect, request, Response, session
 # llamada a la BD
 from flask_mysqldb import MySQL, MySQLdb
+#llamada a la libreria de pyswip
+from pyswip import Prolog
 
 #llamar a carpeta funcion Template  
 # BD login, name:entrada
 app = Flask(__name__, template_folder='template')
+
+# Establece el directorio donde está instalado SWI-Prolog
+os.environ['SWI_HOME_DIR'] = r'C:\Program Files\swipl'
+os.environ['PATH'] += r';C:\Program Files\swipl\bin'
+
+try:
+    prolog = Prolog()
+    print("Prolog inicializado correctamente.")
+except Exception as e:
+    print(f"Error al inicializar Prolog: {e}")
 
 app.config['MYSQL_HOST']='localhost'
 app.config['MYSQL_USER']='root'
@@ -107,11 +120,16 @@ def editar_usuario(id):
 #---- eliminar usuario
 @app.route('/eliminar/<int:id>', methods=["POST"])
 def eliminar_usuario(id):
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM usuarios WHERE id = %s", (id,))
-    mysql.connection.commit()
-    cur.close()
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+        mysql.connection.commit()
+    except MySQLdb.Error as e:
+        app.logger.error(f"Error eliminando usuario: {str(e)}")
+    finally:
+        cur.close()
     return redirect('/admin')
+
 
 #------ editar mascota
 @app.route('/editar-mascota/<int:id>', methods=["GET", "POST"])
@@ -182,6 +200,7 @@ def login():
                     session['logueado'] = True
                     session['id'] = account['id']
                     session['id_rol'] = account['id_rol']
+                    session['usuario'] = _correo  # Establece el usuario en la sesión
 
                     # Redirigir según el rol del usuario
                     if session['id_rol'] == 1:
@@ -213,7 +232,19 @@ def login():
         else:
             # No se encontró ninguna cuenta con ese correo
             return render_template('index.html', mensaje="Usuario o contraseña incorrectos")
-    
+
+# Logout endpoint
+@app.route('/logout')
+def logout():
+    # Elimina la sesión del usuario
+    session.pop('usuario', None)
+    session.clear()
+
+    # Mensaje emergente (popup) de éxito con 
+    flash('Has cerrado sesión exitosamente.', 'success')
+    #re dirije al index
+    return redirect(url_for('home'))
+
 #registro
 @app.route('/registro')
 def registro():
@@ -281,6 +312,18 @@ def listar_mascotas():
     return render_template("listar_mascotas.html", mascotas=mascotas)
 
 #---------------
+#Consulta del chatbot
+@app.route('/consulta-chatbot', methods=['POST'])
+def consulta_chatbot():
+    data = request.get_json()
+    pregunta = data.get('pregunta', '')
+
+    # Consultar Prolog
+    respuesta = list(prolog.query(f'responder_pregunta("{pregunta}", Respuesta)'))
+    if respuesta:
+        return jsonify({'respuesta': respuesta[0]['Respuesta']})
+    else:
+        return jsonify({'respuesta': 'No puedo responder a esta pregunta.'})
 
 
 #---------------
