@@ -90,32 +90,58 @@ def admin():
 @app.route('/editar/<int:id>', methods=["GET", "POST"])
 def editar_usuario(id):
     cur = mysql.connection.cursor()
-    
+
     if request.method == 'POST':
         nombre = request.form['nombre']
         correo = request.form['correo']
         password = request.form['password']
         confirmar_password = request.form['confirmar_password']
         
-        if password != confirmar_password:
-            mensaje = "Las contraseñas no coinciden"
-            return render_template('editar_usuario.html', mensaje=mensaje, id=id)
-        
-        cur.execute("""
-            UPDATE usuarios
-            SET nombre = %s, correo = %s, password = %s
-            WHERE id = %s
-        """, (nombre, correo, password, id))
-        mysql.connection.commit()
+        # Recuperar los datos actuales del usuario antes de actualizar
+        cur.execute("SELECT nombre, correo FROM usuarios WHERE id = %s", (id,))
+        usuario_actual = cur.fetchone()
+
+        actualizaciones = []
+        valores = []
+
+        # Verificar si se ingresó un nuevo nombre y si es diferente al actual
+        if nombre and nombre != usuario_actual['nombre']:
+            actualizaciones.append("nombre = %s")
+            valores.append(nombre)
+
+        # Verificar si se ingresó un nuevo correo y si es diferente al actual
+        if correo and correo != usuario_actual['correo']:
+            actualizaciones.append("correo = %s")
+            valores.append(correo)
+
+        # Verificar si se ingresó una nueva contraseña
+        if password:
+            if password != confirmar_password:
+                mensaje = "Las contraseñas no coinciden"
+                return render_template('editar_usuario.html', mensaje=mensaje, usuario=usuario_actual)
+
+            # Hashear la contraseña antes de actualizarla
+            hashed_password = generate_password_hash(password)
+            actualizaciones.append("password = %s")
+            valores.append(hashed_password)
+
+        # Si hay actualizaciones, ejecutar la consulta
+        if actualizaciones:
+            valores.append(id)
+            query = f"UPDATE usuarios SET {', '.join(actualizaciones)} WHERE id = %s"
+            cur.execute(query, tuple(valores))
+            mysql.connection.commit()
+
         cur.close()
-        
+
         return redirect('/admin')
-    
+
     cur.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
     usuario = cur.fetchone()
     cur.close()
-    
+
     return render_template('editar_usuario.html', usuario=usuario)
+
 
 #---- eliminar usuario
 @app.route('/eliminar/<int:id>', methods=["POST"])

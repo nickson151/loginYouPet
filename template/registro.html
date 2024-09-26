@@ -42,6 +42,7 @@
         <!-- Botón de registro -->
         <div class="text-center">
             <button type="submit" class="btn btn-success" id="submitButton" disabled>Registrar</button>
+            <a href="{{ url_for('home') }}" class="btn btn-secondary" role="button">Cancelar</a>
         </div>
     </form> 
 </div>
@@ -66,7 +67,8 @@
     // Función para validar que el email contenga "@"
     function validarCorreo() {
         const emailValue = emailInput.value.trim();
-        return emailValue.includes('@');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Validación de formato de correo
+        return emailRegex.test(emailValue);
     }
 
     // Función para validar que las contraseñas coincidan
@@ -84,7 +86,11 @@
         const checkboxMarcado = checkbox.checked;
 
         // Habilitar el botón solo si todos los campos están completos y correctos
-        submitButton.disabled = !(emailLleno && passwordLleno && confirmPasswordLleno && passwordsCoinciden && nombreLleno && checkboxMarcado);
+        const formularioValido = emailLleno && passwordLleno && confirmPasswordLleno && passwordsCoinciden && nombreLleno && checkboxMarcado;
+        
+        // Activar o desactivar el botón
+        submitButton.disabled = !formularioValido;
+        submitButton.style.pointerEvents = formularioValido ? 'auto' : 'none';
     }
 
     // Asignar los eventos a los inputs y checkbox
@@ -96,3 +102,40 @@
 
 
 </script>
+<style>
+    /* Ajuste para eliminar espacio en blanco debajo de la cabecera */
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .caja {
+        margin-top: 0;
+        padding-top: 10px;
+    }
+
+    .form-control {
+        width: 350px;
+        padding: 20px;
+        border: 2px solid #FF9800;
+        border-radius: 10px;
+        background-color: #FFF3E0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-success {
+        margin-right: 10px;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+    }
+</style>

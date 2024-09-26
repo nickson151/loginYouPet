@@ -154,6 +154,7 @@
         grid-template-columns: 1fr 2fr 1fr;
         gap: 20px;
         padding: 0px;
+        align-items: center;
     }
 
     .left-column, .center-column, .right-column {
@@ -161,6 +162,10 @@
         background-color: #FFF3E0;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        display: flex; /* Hacer que las columnas sean flexibles */
+        flex-direction: column; /* Organizar el contenido en columnas */
+        align-items: center; /* Centrar el contenido horizontalmente */
+        justify-content: center; /* Centrar el contenido verticalmente */
     }
 
     .left-column {
@@ -297,5 +302,6 @@
         display: block;
     }
 
+    
 
 </style>

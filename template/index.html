@@ -1,81 +1,89 @@
 {% include ('cabecera.html') %}
-<!-- Chatbot HTML -->
-<div class="chatbot-container" id="chatbotContainer">
-  <div class="chatbot-header">
-    <h3>Chatbot - YouPet</h3>
-  </div>
-  <div class="chatbot-body" id="chatbotBody">
-    <!-- Aquí se mostrarán los mensajes del chatbot -->
-    <div class="chat-message">
-      Solo puedes hacerme 3 preguntas concretas con los siguientes carteles:
-    </div>
-    <div class="chatbot-options" id="mainOptions">
-      <!-- Opción Gato -->
-      <div class="chatbot-option" onclick="seleccionarOpcion('gato')">
-        Gato
+<div class="contenedor-principal">
+  <!-- Chatbot HTML -->
+  <div class="contenido-izquierda">
+    <div class="chatbot-container" id="chatbotContainer">
+      <div class="chatbot-header">
+        <h3>Chatbot - YouPet</h3>
       </div>
-      <!-- Opción Perro -->
-      <div class="chatbot-option" onclick="seleccionarOpcion('perro')">
-        Perro
+      <div class="chatbot-body" id="chatbotBody">
+        <!-- Aquí se mostrarán los mensajes del chatbot -->
+        <div class="chat-message">
+          Solo puedes hacerme 3 preguntas concretas con los siguientes carteles:
+        </div>
+        <div class="chatbot-options" id="mainOptions">
+          <!-- Opción Gato -->
+          <div class="chatbot-option" onclick="seleccionarOpcion('gato')">
+            Gato
+          </div>
+          <!-- Opción Perro -->
+          <div class="chatbot-option" onclick="seleccionarOpcion('perro')">
+            Perro
+          </div>
+        </div>
+        <div class="chatbot-options" id="subOpciones" style="display: none;">
+          <!-- Subopciones según la selección -->
+        </div>
+      </div>
+      <div class="chatbot-input">
+        <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button onclick="sendMessage()">Enviar</button>
       </div>
     </div>
-    <div class="chatbot-options" id="subOpciones" style="display: none;">
-      <!-- Subopciones según la selección -->
-    </div>
-  </div>
-  <div class="chatbot-input">
-    <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..." onkeypress="if(event.key === 'Enter') sendMessage()">
-    <button onclick="sendMessage()">Enviar</button>
-  </div>
-</div>
 
 
-<!-- Login -->
-<!-- Clase caja ayuda a separar-->
-<div class="caja">
-  <!-- mandar por el metodo POST la FUNCION  -->
-  <form class="form-control" action="acceso-login" method="POST">
-    <!-- Alertas -->
-    <!--------->
-    <h1>YouPet IA</h1>  
-    <h1 class="text-center t">Login</h1>
-    <!-- Mostrar mensaje de error si existe -->
-    {% if mensaje %}
-    <div class="alert alert-danger" role="alert">
-      {{ mensaje }}
+    <!-- Login -->
+    <!-- Clase caja ayuda a separar-->
+    <div class="caja">
+      <!-- mandar por el metodo POST la FUNCION  -->
+      <form class="form-control" action="acceso-login" method="POST">
+        <!-- Alertas -->
+        <!--------->
+        <h1>YouPet IA</h1>  
+        <h1 class="text-center t">Login</h1>
+        <!-- Mostrar mensaje de error si existe -->
+        {% if mensaje %}
+        <div class="alert alert-danger" role="alert">
+          {{ mensaje }}
+        </div>
+        {% endif %}
+        <!--  Mensaje de registro exitoso -->
+        {% if mensaje2 %}
+        <div class="alert alert-success" role="alert">
+          {{ mensaje2 }}
+        </div>
+        {% endif %}
+        <!-- input -->
+        <div class="form-group">
+          <label for="exampleInputEmail1">Correo </label>
+          <!-- entrada de texto lleva a la función : namme"txtCorreo" -->
+          <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" 
+          placeholder="Tu correo  " name="txtCorreo" required>
+          <small id="emailHelp" class="form-text text-muted">Nunca compartiremos su correo electrónico con nadie más.</small>
+        </div>
+        <!-- input -->
+        <div class="form-group">
+          <label for="exampleInputPassword1">Contraseña</label>
+          <!-- entrada de texto lleva a la función : name"txtPassword" -->
+          <input type="password" class="form-control" id="exampleInputPassword1" 
+          placeholder="Tu contraseña"name="txtPassword" required>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="Check1" required>
+          <label class="form-check-label" for="Check1">Soy un humano</label>
+        </div>
+        <!-- botòn -->
+        <div class="text-center">
+          <button type="submit" class="btn btn-success" id="submitButton" disabled>Ingresar</button>
+        </div>
+      </form>
+      
+    <!-- Fin Login-->
     </div>
-    {% endif %}
-    <!--  Mensaje de registro exitoso -->
-    {% if mensaje2 %}
-    <div class="alert alert-success" role="alert">
-      {{ mensaje2 }}
-    </div>
-    {% endif %}
-    <!-- input -->
-    <div class="form-group">
-      <label for="exampleInputEmail1">Correo </label>
-      <!-- entrada de texto lleva a la función : namme"txtCorreo" -->
-      <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" 
-      placeholder="Tu correo Gmail " name="txtCorreo" required>
-      <small id="emailHelp" class="form-text text-muted">Nunca compartiremos su correo electrónico con nadie más.</small>
-    </div>
-    <!-- input -->
-    <div class="form-group">
-      <label for="exampleInputPassword1">Contraseña</label>
-      <!-- entrada de texto lleva a la función : name"txtPassword" -->
-      <input type="password" class="form-control" id="exampleInputPassword1" 
-      placeholder="Tu contraseña"name="txtPassword" required>
-    </div>
-    <div class="form-check">
-      <input type="checkbox" class="form-check-input" id="Check1" required>
-      <label class="form-check-label" for="Check1">Soy un humano</label>
-    </div>
-    <!-- botòn -->
-    <div class="text-center">
-      <button type="submit" class="btn btn-success" id="submitButton" disabled>Ingresar</button>
-    </div>
-  </form>
-<!-- Fin Login-->
+  </div>
+  <div class="imagen-container"></div>
+    <img src="../static/youpetlogin.png" alt="YouPet Logo" class="imagen-youpet">
+  </div>
 </div>
 
 <!-- Script para validar formulario de login -->
@@ -156,6 +164,13 @@
 </script>
 
 <style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+  }
+  
   .chatbot-container {
     position: fixed;
     bottom: 50px;
@@ -237,4 +252,45 @@
     font-family: Arial, sans-serif;
     color: #333;
   }
+
+  .contenedor-principal {
+  display: flex;
+  justify-content: space-between; /* Distribuye los elementos de manera que ocupen la izquierda y derecha */
+  align-items: center; /* Alinea el contenido verticalmente */
+  height: 100vh; /* Ocupa toda la altura de la pantalla */
+  }
+
+  .contenido-izquierda {
+    width: 70%; /* Ajusta el tamaño de la sección izquierda */
+  }
+
+  .imagen-container {
+    display: flex;
+    justify-content: center; /* Centra la imagen dentro del contenedor */
+    align-items: center; /* Alinea la imagen verticalmente */
+    width: 30%; /* Tamaño para el área de la imagen */
+  }
+
+  .imagen-youpet {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .caja {
+  display: flex;
+  justify-content: flex-end; 
+  margin-right: -200px; 
+  }
+
+  .form-control {
+    width: 350px; /* Ajusta el ancho del formulario según tu preferencia */
+    padding: 20px;
+    border: 2px solid #FF9800;
+    border-radius: 10px;
+    background-color: #FFF3E0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  
 </style>
