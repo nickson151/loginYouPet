@@ -10,14 +10,22 @@
         <div class="card shadow">
             <div class="card-body">
                 <!-- Mensaje de error o éxito -->
-                {% if mensaje %}
+                {% if mensaje_exito %}
+                <div class="alert alert-success" role="alert">
+                    {{ mensaje_exito }}
+                </div>
+                {% elif mensaje %}
                 <div class="alert alert-danger" role="alert">
                     {{ mensaje }}
                 </div>
                 {% endif %}
 
                 <!-- Formulario para agregar una mascota -->
-                <form id="petForm" action="/mascotas" method="POST">
+                <form id="petForm" action="/agregar-mascota" method="POST">
+                    <!-- Campo oculto con el ID del usuario -->
+                    <input type="hidden" name="id_usuario" value="{{ user_id }}">
+
+                    <!-- Campos del formulario para agregar una mascota -->
                     <div class="row mb-3">
                         <div class="col">
                             <label>Nombre</label>
@@ -25,52 +33,59 @@
                         </div>
                         <div class="col">
                             <label>Especie</label>
-                            <input type="text" class="form-control mb-3" name="especie" required>
+                            <select name="especie" id="especie" class="form-control" required>
+                                <option value="">Seleccione *</option>
+                                <option value="perro">Perro</option>
+                                <option value="gato">Gato</option>
+                            </select>
                         </div>
                         <div class="col">
                             <label>Edad</label>
                             <input type="number" class="form-control mb-3" name="edad" required>
                         </div>
                         <div class="col">
+                            <label>Raza</label>
+                            <select name="raza" id="raza" class="form-control" required>
+                                <option value="">Seleccione *</option>
+                                <option value="Chihuahua">Chihuahua</option>
+                                <option value="Gato persa">Gato persa</option>
+                            </select>
+                        </div>
+                        <div class="col">
                             <button class="btn btn-primary mb-3 mt-4" type="submit">Guardar</button>
-                            <button type="button" class="btn btn-secondary mb-3 mt-4"
-                                onclick="mostrarMascotas()">Mostrar</button>
                         </div>
                     </div>
                 </form>
 
                 <!-- Tabla para mostrar las mascotas -->
+                <h2 class="text-center mt-5 mb-4">Listado de Mascotas</h2>
                 {% if mascotas %}
-                <table class="table table-bordered">
+                <table class="table table-striped">
                     <thead class="table-dark">
                         <tr>
                             <th scope="col">ID</th>
                             <th scope="col">Nombre</th>
                             <th scope="col">Especie</th>
+                            <th scope="col">Raza</th>
                             <th scope="col">Edad</th>
-                            <th scope="col">Editar</th>
-                            <th scope="col">Eliminar</th>
+                            <th scope="col">Propietario</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for mascota in mascotas %}
                         <tr>
-                            <td scope="row">{{ mascota.id }}</td>
+                            <td scope="row">{{ mascota.id_mascota }}</td>
                             <td>{{ mascota.nombre }}</td>
                             <td>{{ mascota.especie }}</td>
+                            <td>{{ mascota.raza }}</td>
                             <td>{{ mascota.edad }}</td>
-                            <td><a href="/editar-mascota/{{ mascota.id }}" class="btn btn-primary btn-sm">Editar</a></td>
-                            <td>
-                                <form action="/eliminar-mascota/{{ mascota.id }}" method="POST" style="display:inline;">
-                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                                </form>
-                            </td>
+                            <td>{{ mascota.propietario }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
                 {% else %}
-                <p>No hay mascotas registradas</p>
+                <p class="text-center mt-4">No hay datos disponibles. Agrega una mascota para ver la lista.</p>
                 {% endif %}
             </div>
         </div>
@@ -78,10 +93,22 @@
 
     <!-- Iconos debajo de la tabla -->
     <div class="icons-container">
-        <a href="#" class="btn btn-primary">Agregar PDF</a>
-        <a href="#" class="btn btn-primary">Agregar Foto</a>
+        <form action="/subir-archivo" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="archivo" class="form-label">Agregar PDF:</label>
+                <input type="file" name="archivo" class="form-control" accept=".pdf">
+                <button type="submit" class="btn btn-primary mt-2">Subir PDF</button>
+            </div>
+        </form>
+        
+        <form action="/subir-archivo" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="archivo" class="form-label">Agregar Foto:</label>
+                <input type="file" name="archivo" class="form-control" accept="image/*">
+                <button type="submit" class="btn btn-primary mt-2">Subir Foto</button>
+            </div>
+        </form>
     </div>
-
     
 </div>
 
@@ -89,43 +116,72 @@
 <div class="chatbot-container" id="chatbotContainer">
     <div class="chatbot-header">
         <h3>Chatbot - YouPet Premium</h3>
+        <button  id="minimizeButton" onclick="toggleChatbot()">-</button>
     </div>
     <div class="chatbot-body" id="chatbotBody">
-        <!-- Aquí se mostrarán los mensajes del chatbot -->
-        <div class="chat-message">
-            Requiero enseñarte como plantearme las preguntas:
-        </div>
+        <div class="chat-message">Requiero enseñarte como plantearme las preguntas:</div>
         <div class="chatbot-options" id="mainOptions">
-            <!-- Opción Gato -->
-            <div class="chatbot-option" onclick="seleccionarOpcion('gato')">
-                Gato
-            </div>
-            <!-- Opción Perro -->
-            <div class="chatbot-option" onclick="seleccionarOpcion('perro')">
-                Perro
-            </div>
+            <div class="chatbot-option" onclick="seleccionarOpcion('gato')">Gato</div>
+            <div class="chatbot-option" onclick="seleccionarOpcion('perro')">Perro</div>
         </div>
-        <div class="chatbot-options" id="subOpciones" style="display: none;">
-            <!-- Subopciones según la selección -->
-        </div>
+        <div class="chatbot-options" id="subOpciones" style="display: none;"></div>
     </div>
     <div class="chatbot-input">
-        <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..."
-            onkeypress="if(event.key === 'Enter') sendMessage()">
+        <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..." onkeypress="if(event.key === 'Enter') sendMessage()">
         <button onclick="sendMessage()">Enviar</button>
     </div>
 </div>
+
+
 {% include 'footer.html' %}
 
-<script>
-    function mostrarMascotas() {
-        // Enviar una solicitud GET para recargar la lista de mascotas
-        window.location.href = '/mascotas';
-    }
 
+<script>
+    // Función para desvanecer mensajes
+    setTimeout(function() {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            alert.style.transition = 'opacity 0.5s ease-out';
+            alert.style.opacity = '0';
+            setTimeout(() => {
+                alert.remove();
+            }, 500);
+        }
+    }, 6000); // 6 segundos
+    
     function confirmarEliminacion() {
         // Confirmar antes de eliminar una mascota
         return confirm("¿Estás seguro de que deseas eliminar esta mascota?");
+    }
+
+    function guardarCambios(id) {
+        const nombre = document.getElementById(`nombre-${id}`).value;
+        const especie = document.getElementById(`especie-${id}`).value;
+        const edad = document.getElementById(`edad-${id}`).value;
+        const raza = document.getElementById(`raza-${id}`).value;
+
+        fetch(`/actualizar-mascota/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                nombre: nombre,
+                especie: especie,
+                edad: edad,
+                raza: raza
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload(); // Recargar la página para mostrar los cambios
+            } else {
+                alert("Error al guardar los cambios.");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
     }
 
     function validarFormulario() {
@@ -149,6 +205,44 @@
         // Confirmación antes de enviar el formulario
         return confirm("¿Estás seguro de que deseas guardar los cambios?");
     }
+
+    // Selecciona los elementos del formulario correspondientes a especie y raza
+    const especieSelect = document.getElementById('especie');
+    const razaSelect = document.getElementById('raza');
+
+    // Escucha el evento 'change' del select de especie
+    especieSelect.addEventListener('change', function () {
+        // Limpia las opciones actuales de raza
+        razaSelect.innerHTML = '';
+
+        // Opciones según la especie seleccionada
+        let opciones = [];
+
+        // Define las opciones según la especie
+        if (especieSelect.value === 'perro') {
+            opciones = ['Chihuahua'];
+        } else if (especieSelect.value === 'gato') {
+            opciones = ['Gato persa'];
+        }
+
+        // Agrega un placeholder de selección
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Seleccione *';
+        razaSelect.appendChild(placeholderOption);
+
+        // Llena el select de raza con las opciones correspondientes
+        opciones.forEach(function (raza) {
+            const option = document.createElement('option');
+            option.value = raza;
+            option.textContent = raza;
+            razaSelect.appendChild(option);
+        });
+
+        // Si se desea, seleccionar automáticamente la primera opción después del placeholder
+        razaSelect.value = opciones.length > 0 ? opciones[0] : '';
+    });
+
 
     function seleccionarOpcion(animal) {
         const subOpcionesDiv = document.getElementById('subOpciones');
@@ -187,6 +281,42 @@
             document.getElementById('chatbotBody').innerHTML += `<div class="chat-message">Tú: ${userInput}</div>`;
             document.getElementById('userInput').value = ''; // Limpiar campo de entrada
         }
+    }
+
+    function mostrarMascotas() {
+        // Hacer una solicitud AJAX a la ruta de 'obtener_mascotas'
+        fetch('/obtener_mascotas')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    // Mostrar la tabla de mascotas y limpiar el cuerpo de la tabla
+                    document.getElementById('tabla-mascotas').style.display = 'block';
+                    const cuerpoTabla = document.getElementById('cuerpo-tabla');
+                    cuerpoTabla.innerHTML = '';
+
+                    // Llenar la tabla con los datos obtenidos
+                    data.forEach(mascota => {
+                        const fila = document.createElement('tr');
+                        fila.innerHTML = `
+                            <td>${mascota.id_mascota}</td>
+                            <td>${mascota.nombre}</td>
+                            <td>${mascota.especie}</td>
+                            <td>${mascota.edad}</td>
+                            <td>${mascota.raza}</td>
+                            <td><a href="/actualizar_mascota/${mascota.id_mascota}" class="btn btn-primary btn-sm">Editar</a></td>
+                            <td>
+                                <form action="/eliminar-mascota/${mascota.id_mascota}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                </form>
+                            </td>
+                        `;
+                        cuerpoTabla.appendChild(fila);
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
     }
 </script>
 <style>

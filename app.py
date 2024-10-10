@@ -5,6 +5,7 @@
 #pip3 install MySQL
 #Flask --version
 #pip3 install virtualenv
+#pip3 install pyswip
 #virtualenv env
 #entorno virtual:          cd env/Scripts
 from functools import wraps
@@ -156,49 +157,97 @@ def eliminar_usuario(id):
         cur.close()
     return redirect('/admin')
 
+#---------------------------------------------------
 
-#------ editar mascota
-@app.route('/editar-mascota/<int:id>', methods=["GET", "POST"])
-def editar_mascota(id):
-    cur = mysql.connection.cursor()
-    
+# ---------------------------------------------------
+# Ruta para registrar una nueva mascota
+@app.route('/agregar-mascota', methods=['POST'])
+def agregar_mascota():
     if request.method == 'POST':
         nombre = request.form['nombre']
         especie = request.form['especie']
         edad = request.form['edad']
         raza = request.form['raza']
-        id_usuario = request.form['id_usuario']
-        
+        id_usuario = session.get('id')  # Obtiene el ID del usuario de la sesión
+
+        # Validar que el usuario esté logueado
+        if not id_usuario:
+            return render_template('premium.html', mensaje="Debes iniciar sesión para registrar una mascota.")
+
+        # Insertar la nueva mascota en la base de datos
+        cur = mysql.connection.cursor()
+        try:
+            cur.execute("""
+                INSERT INTO mascotas (id_usuario, nombre, especie, edad, raza) 
+                VALUES (%s, %s, %s, %s, %s)
+            """, (id_usuario, nombre, especie, edad, raza))
+            mysql.connection.commit()
+            return render_template("premium.html", mensaje_exito="Mascota registrada exitosamente.")
+        except Exception as e:
+            mysql.connection.rollback()
+            return render_template("premium.html", mensaje="Error al registrar la mascota: {}".format(e))
+        finally:
+            cur.close()
+
+    return render_template('premium.html')
+
+    
+# Función para listar mascotas y mostrar premium.html
+@app.route('/premium', methods=["GET", "POST"])
+def premium():
+    # Obtener el ID del usuario de la sesión
+    id_usuario = session.get('id')
+
+    # Consulta para obtener las mascotas asociadas a este usuario
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT m.id_mascota, m.nombre, m.especie, m.raza, m.edad, u.nombre AS propietario
+        FROM mascotas m
+        JOIN usuarios u ON m.id_usuario = u.id
+        WHERE m.id_usuario = %s
+    """, (id_usuario,))
+    mascotas = cur.fetchall()
+    cur.close()
+
+    # Pasar las mascotas al template premium.html
+    return render_template("premium.html", mascotas=mascotas, user_id=id_usuario)
+
+
+
+
+@app.route('/actualizar-mascota/<int:id>', methods=['POST'])
+def actualizar_mascota(id):
+    try:
+        nombre = request.form['nombre']
+        especie = request.form['especie']
+        edad = request.form['edad']
+        raza = request.form['raza']
+
+        cur = mysql.connection.cursor()
         cur.execute("""
             UPDATE mascotas
-            SET nombre = %s, especie = %s, edad = %s, raza = %s, id_usuario = %s
-            WHERE id_mascota = %s
-        """, (nombre, especie, edad, raza, id_usuario, id))
+            SET nombre = %s, especie = %s, edad = %s, raza = %s
+            WHERE id = %s
+        """, (nombre, especie, edad, raza, id))
         mysql.connection.commit()
         cur.close()
-        
-        return redirect('/listar-mascotas')
-    
-    cur.execute("SELECT * FROM mascotas WHERE id_mascota = %s", (id,))
-    mascota = cur.fetchone()
-    cur.execute("SELECT * FROM usuarios")
-    usuarios = cur.fetchall()
-    cur.close()
-    
-    return render_template('editar_mascota.html', mascota=mascota, usuarios=usuarios)
 
-#------ eliminar mascota
-@app.route('/eliminar-mascota/<int:id>', methods=["POST"])
+        return redirect('/premium')
+    except Exception as e:
+        return render_template('premium.html', mensaje="Error al actualizar la mascota: {}".format(e))
+    
+# Ruta para eliminar una mascota
+@app.route('/eliminar-mascota/<int:id>', methods=['POST'])
 def eliminar_mascota(id):
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM mascotas WHERE id_mascota = %s", (id,))
+    cur.execute("DELETE FROM mascotas WHERE id = %s", (id,))
     mysql.connection.commit()
     cur.close()
-    return redirect('/listar_mascotas')
+    return redirect('/premium')
+
 
 #---------------------------------------------------
-#---------------------------------------------------
-#---------------------------------------------------
+
 
 #Funcion de LOGIN que se puso en el metodo POST
 #del FORM Class Action -> route
@@ -271,6 +320,23 @@ def logout():
     #re dirije al index
     return redirect(url_for('home'))
 
+#---------------------------------------------------
+#--- Botón NAV Listar mascotas ------
+@app.route('/listar_mascotas', methods=["GET"])
+def listar_mascotas():
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT m.id_mascota, m.nombre, m.especie, m.raza, m.edad, u.nombre AS propietario
+        FROM mascotas m
+        JOIN usuarios u ON m.id_usuario = u.id
+    """)
+    mascotas = cur.fetchall()
+    cur.close()
+
+    return render_template("listar_mascotas.html", mascotas=mascotas)
+
+#---------------------------------------------------
+
 #registro
 @app.route('/registro')
 def registro():
@@ -322,20 +388,6 @@ def crear_registro():
 
     return render_template('registro.html')
 #-----------
-
-#--- Listar mascotas ------
-@app.route('/listar_mascotas', methods=["GET"])
-def listar_mascotas():
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT m.id_mascota, m.nombre, m.especie, m.raza, m.edad, u.nombre AS propietario
-        FROM mascotas m
-        JOIN usuarios u ON m.id_usuario = u.id
-    """)
-    mascotas = cur.fetchall()
-    cur.close()
-
-    return render_template("listar_mascotas.html", mascotas=mascotas)
 
 #---------------
 #Consulta del chatbot
