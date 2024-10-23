@@ -160,7 +160,29 @@ def eliminar_usuario(id):
 #---------------------------------------------------
 
 # ---------------------------------------------------
-# Ruta para registrar una nueva mascota
+# Ruta para la vista premium con lista de mascotas asociadas al usuario premium
+@app.route('/premium')
+def premium():
+    id_usuario = session.get('id')  # Obtener el ID del usuario desde la sesión
+    if not id_usuario:
+        return redirect('/login')  # Redirigir al login si no está autenticado
+
+    # Recuperar el nombre del usuario
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT nombre FROM usuarios WHERE id = %s", (id_usuario,))
+    usuario = cur.fetchone()  # Asegúrate de que hay un resultado
+    cur.execute("SELECT * FROM mascotas WHERE id_usuario = %s", (id_usuario,))
+    mascotas = cur.fetchall()
+    cur.close()
+
+    if not usuario:  # Si no se encuentra el usuario, maneja el error
+        usuario = {'nombre': 'Invitado'}  # Usar un valor por defecto o redirigir
+
+    return render_template('premium.html', usuario=usuario, mascotas=mascotas)
+
+
+
+# Ruta para agregar una nueva mascota
 @app.route('/agregar-mascota', methods=['POST'])
 def agregar_mascota():
     if request.method == 'POST':
@@ -168,82 +190,102 @@ def agregar_mascota():
         especie = request.form['especie']
         edad = request.form['edad']
         raza = request.form['raza']
-        id_usuario = session.get('id')  # Obtiene el ID del usuario de la sesión
+        id_usuario = session.get('id')
 
-        # Validar que el usuario esté logueado
         if not id_usuario:
-            return render_template('premium.html', mensaje="Debes iniciar sesión para registrar una mascota.")
+            return redirect('/login')
 
-        # Insertar la nueva mascota en la base de datos
-        cur = mysql.connection.cursor()
         try:
+            cur = mysql.connection.cursor()
             cur.execute("""
                 INSERT INTO mascotas (id_usuario, nombre, especie, edad, raza) 
                 VALUES (%s, %s, %s, %s, %s)
             """, (id_usuario, nombre, especie, edad, raza))
             mysql.connection.commit()
-            return render_template("premium.html", mensaje_exito="Mascota registrada exitosamente.")
-        except Exception as e:
-            mysql.connection.rollback()
-            return render_template("premium.html", mensaje="Error al registrar la mascota: {}".format(e))
-        finally:
             cur.close()
-
-    return render_template('premium.html')
-
-    
-# Función para listar mascotas y mostrar premium.html
-@app.route('/premium', methods=["GET", "POST"])
-def premium():
-    # Obtener el ID del usuario de la sesión
-    id_usuario = session.get('id')
-
-    # Consulta para obtener las mascotas asociadas a este usuario
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT m.id_mascota, m.nombre, m.especie, m.raza, m.edad, u.nombre AS propietario
-        FROM mascotas m
-        JOIN usuarios u ON m.id_usuario = u.id
-        WHERE m.id_usuario = %s
-    """, (id_usuario,))
-    mascotas = cur.fetchall()
-    cur.close()
-
-    # Pasar las mascotas al template premium.html
-    return render_template("premium.html", mascotas=mascotas, user_id=id_usuario)
+            return redirect('/premium')
+        except Exception as e:
+            return render_template('premium.html', mensaje="Error al agregar la mascota: {}".format(e))
 
 
-
-
+# Ruta para actualizar una mascota
 @app.route('/actualizar-mascota/<int:id>', methods=['POST'])
 def actualizar_mascota(id):
-    try:
+    if request.method == 'POST':
         nombre = request.form['nombre']
         especie = request.form['especie']
         edad = request.form['edad']
         raza = request.form['raza']
 
-        cur = mysql.connection.cursor()
-        cur.execute("""
-            UPDATE mascotas
-            SET nombre = %s, especie = %s, edad = %s, raza = %s
-            WHERE id = %s
-        """, (nombre, especie, edad, raza, id))
-        mysql.connection.commit()
-        cur.close()
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute("""
+                UPDATE mascotas 
+                SET nombre = %s, especie = %s, edad = %s, raza = %s 
+                WHERE id = %s
+            """, (nombre, especie, edad, raza, id))
+            mysql.connection.commit()
+            cur.close()
+            return redirect('/premium')
+        except Exception as e:
+            return render_template('premium.html', mensaje="Error al actualizar la mascota: {}".format(e))
 
-        return redirect('/premium')
-    except Exception as e:
-        return render_template('premium.html', mensaje="Error al actualizar la mascota: {}".format(e))
-    
-# Ruta para eliminar una mascota
+
+# Ruta para eliminar una mascota (validando diagnósticos)
 @app.route('/eliminar-mascota/<int:id>', methods=['POST'])
 def eliminar_mascota(id):
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM mascotas WHERE id = %s", (id,))
-    mysql.connection.commit()
-    cur.close()
-    return redirect('/premium')
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM diagnosticos WHERE id_mascota = %s", (id,))
+        diagnosticos = cur.fetchone()
+
+        if diagnosticos:
+            return render_template('premium.html', mensaje="No puedes eliminar una mascota con diagnósticos.")
+
+        cur.execute("DELETE FROM mascotas WHERE id = %s", (id,))
+        mysql.connection.commit()
+        cur.close()
+        return redirect('/premium')
+    except Exception as e:
+        return render_template('premium.html', mensaje="Error al eliminar la mascota: {}".format(e))
+
+
+#---------------------------------------------------
+
+@app.route('/cambiarRol', methods=['POST'])
+def cambiar_rol():
+    data = request.get_json()
+    nuevo_rol = data.get('nuevoRol')
+
+    # Verificar si el usuario está autenticado
+    if 'id' not in session:
+        return jsonify({'success': False, 'message': 'Usuario no autenticado.'}), 403
+
+    user_id = session['id']
+
+    try:
+        # Conexión a la base de datos
+        cursor = mysql.connection.cursor()
+        # Actualizar el rol del usuario a 'premium'
+        cursor.execute("""
+            UPDATE usuarios 
+            SET id_rol = (SELECT id_rol FROM roles WHERE descripcion = %s) 
+            WHERE id = %s
+        """, (nuevo_rol, user_id))
+        mysql.connection.commit()
+
+        # Confirmar si la actualización fue exitosa
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'message': 'No se pudo cambiar el rol.'})
+        
+        return jsonify({'success': True})
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return jsonify({'success': False, 'message': 'Error al actualizar el rol.'})
+    
+    finally:
+        cursor.close()
 
 
 #---------------------------------------------------

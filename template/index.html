@@ -33,7 +33,7 @@
     </div>
     <br><br><br>
     <div class="chat-message-intuitivo">
-      Bienvenido a YouPet IA, aquí puedes preguntar sobre la salud de tus mascotas. ¡Haz tu selección!
+      Bienvenido a YouPet IA, aquí puedes preguntar sobre la salud de tus mascotas. 
     </div>
     
 
@@ -129,6 +129,8 @@
   passwordInput.addEventListener('input', validarFormulario);
   checkbox.addEventListener('change', validarFormulario);
 
+  let preguntasRealizadas = 0;
+
   function seleccionarOpcion(animal) {
     const subOpcionesDiv = document.getElementById('subOpciones');
     const mainOptionsDiv = document.getElementById('mainOptions');
@@ -137,36 +139,133 @@
     subOpcionesDiv.style.display = 'grid'; // Mostrar subopciones
 
     let opcionesHTML = '';
-    
+
     if (animal === 'gato') {
-      opcionesHTML = `
-        <div class="chatbot-option" onclick="mostrarResultado('Gato enfermo')">Está enfermo</div>
-        <div class="chatbot-option" onclick="mostrarResultado('Gato sano')">Está sano</div>
-      `;
+        opcionesHTML = `
+          <div class="chatbot-option" onclick="seleccionarSalud('gato', 'sano')">Está sano</div>
+          <div class="chatbot-option" onclick="seleccionarSalud('gato', 'enfermo')">Está enfermo</div>
+        `;
     } else if (animal === 'perro') {
-      opcionesHTML = `
-        <div class="chatbot-option" onclick="mostrarResultado('Perro enfermo')">Está enfermo</div>
-        <div class="chatbot-option" onclick="mostrarResultado('Perro sano')">Está sano</div>
-      `;
+        opcionesHTML = `
+          <div class="chatbot-option" onclick="seleccionarSalud('perro', 'sano')">Está sano</div>
+          <div class="chatbot-option" onclick="seleccionarSalud('perro', 'enfermo')">Está enfermo</div>
+        `;
     }
 
     subOpcionesDiv.innerHTML = opcionesHTML;
   }
 
-  function mostrarResultado(resultado) {
+  function seleccionarSalud(animal, estado) {
     const chatbotBody = document.getElementById('chatbotBody');
-    chatbotBody.innerHTML += `<div class="chat-message">${resultado}</div>`;
+    const subOpcionesDiv = document.getElementById('subOpciones');
+    
+    let opcionesHTML = '';
+
+    if (estado === 'enfermo') {
+        if (animal === 'gato') {
+            opcionesHTML = `
+              <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Vómito')">Vómito</div>
+              <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Fiebre')">Fiebre</div>
+            `;
+        } else if (animal === 'perro') {
+            opcionesHTML = `
+              <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Rasquiña')">Rasquiña</div>
+              <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Diarrea')">Diarrea</div>
+            `;
+        }
+    } else {
+        opcionesHTML = `
+          <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Está sano')">Tu ${animal} está sano.</div>
+        `;
+    }
+
+    subOpcionesDiv.innerHTML = opcionesHTML;
+  }
+
+  function mostrarResultado(animal, sintoma) {
+    const chatbotBody = document.getElementById('chatbotBody');
+    preguntasRealizadas++;
+
+    // Agregar mensaje al chatbot sobre la mascota y su síntoma
+    chatbotBody.innerHTML += `<div class="chat-message">Tu ${animal}: ${sintoma}</div>`;
+
+    // Diagnóstico básico
+    diagnosticoBasico(animal, sintoma);
+
+    // Si se han realizado 3 preguntas, invitar a la versión premium
+    if (preguntasRealizadas === 3) {
+        invitarPremium();
+    }
+
     document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
     document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
   }
 
-  function sendMessage() {
-    const userInput = document.getElementById('userInput').value;
-    if (userInput.trim() !== '') {
-      document.getElementById('chatbotBody').innerHTML += `<div class="chat-message">Tú: ${userInput}</div>`;
-      document.getElementById('userInput').value = ''; // Limpiar campo de entrada
+  function diagnosticoBasico(animal, sintoma) {
+    const chatbotBody = document.getElementById('chatbotBody');
+    let diagnostico = '';
+
+    // Diagnósticos básicos según el animal y el síntoma
+    if (animal === 'gato') {
+        if (sintoma === 'Vómito') {
+            diagnostico = 'Es posible que tu gato tenga problemas digestivos o gastritis.';
+        } else if (sintoma === 'Fiebre') {
+            diagnostico = 'Es posible que tu gato tenga una infección viral o bacteriana.';
+        }
+    } else if (animal === 'perro') {
+        if (sintoma === 'Rasquiña') {
+            diagnostico = 'Es posible que tu perro tenga alergias o una infección cutánea.';
+        } else if (sintoma === 'Diarrea') {
+            diagnostico = 'Es posible que tu perro tenga una infección gastrointestinal.';
+        }
+    }
+
+    // Mostrar diagnóstico en el chatbot
+    chatbotBody.innerHTML += `<div class="chat-message">Diagnóstico básico: ${diagnostico}</div>`;
+
+    // Condición para mostrar opciones de editar o eliminar mascota
+    if (diagnostico !== '') {
+        chatbotBody.innerHTML += `
+            <div class="chat-message">¿Deseas editar o eliminar esta mascota?</div>
+            <div class="chatbot-option" onclick="editarMascota('${animal}')">Editar</div>
+            <div class="chatbot-option" onclick="eliminarMascota('${animal}')">Eliminar</div>
+        `;
     }
   }
+
+  function invitarPremium() {
+    const chatbotBody = document.getElementById('chatbotBody');
+    chatbotBody.innerHTML += `
+      <div class="chat-message invitacion-premium">
+        ¡Has alcanzado el límite de preguntas gratuitas! <br> 
+        Ingresa "LOGIN" para obtener más diagnósticos detallados con una cuenta premium.
+      </div>
+    `;
+    document.getElementById('subOpciones').style.display = 'none';
+    document.getElementById('mainOptions').style.display = 'none';
+  }
+
+  // Función para verificar si las mascotas tienen diagnósticos y desactivar los botones de editar y eliminar si es necesario
+  function gestionarMascotasConDiagnostico() {
+    const mascotas = document.querySelectorAll('.mascota'); // Selector para obtener las mascotas en la tabla
+    mascotas.forEach(mascota => {
+      const tieneDiagnostico = mascota.getAttribute('data-diagnostico') === 'true'; // Verifica si la mascota tiene diagnóstico
+      const editarButton = mascota.querySelector('.editar');
+      const eliminarButton = mascota.querySelector('.eliminar');
+
+      if (tieneDiagnostico) {
+        mascota.classList.add('standby'); // Agrega clase "standby" para identificar las mascotas con diagnóstico
+        editarButton.disabled = true; // Desactiva botón de editar
+        eliminarButton.disabled = true; // Desactiva botón de eliminar
+      }
+    });
+  }
+
+  // Llamar a la función cuando la página cargue
+  window.onload = function() {
+    gestionarMascotasConDiagnostico();
+  };
+
 </script>
 
 <style>
