@@ -64,6 +64,8 @@
 {% include 'footer.html' %}
 
 <script>
+    let preguntasRealizadas = 0;
+
     function seleccionarOpcion(animal) {
         const subOpcionesDiv = document.getElementById('subOpciones');
         const mainOptionsDiv = document.getElementById('mainOptions');
@@ -90,7 +92,19 @@
 
     function mostrarResultado(resultado) {
         const chatbotBody = document.getElementById('chatbotBody');
+        preguntasRealizadas++; // Incrementar el contador de preguntas
+
+        // Agregar mensaje al chatbot
         chatbotBody.innerHTML += `<div class="chat-message">${resultado}</div>`;
+
+        // Diagnóstico básico
+        diagnosticoBasico(resultado);
+
+        // Si se han realizado 3 preguntas, invitar a la versión premium
+        if (preguntasRealizadas === 3) {
+            invitarPremium();
+        }
+
         document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
         document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
     }
@@ -198,6 +212,51 @@
         }
     }
 
+
+    function diagnosticoBasico(resultado) {
+        const chatbotBody = document.getElementById('chatbotBody');
+        let diagnostico = '';
+
+        // Diagnósticos básicos según el resultado
+        if (resultado.includes('Gato enfermo')) {
+            diagnostico = 'Es posible que tu gato tenga problemas digestivos o gastritis.';
+        } else if (resultado.includes('Perro enfermo')) {
+            diagnostico = 'Es posible que tu perro tenga alergias o una infección cutánea.';
+        }
+
+        // Mostrar diagnóstico en el chatbot
+        if (diagnostico) {
+            chatbotBody.innerHTML += `<div class="chat-message">Diagnóstico básico: ${diagnostico}</div>`;
+        }
+    }
+    
+    function invitarPremium() {
+        const chatbotBody = document.getElementById('chatbotBody');
+        chatbotBody.innerHTML += `
+        <div class="chat-message invitacion-premium">
+            ¡Has alcanzado el límite de preguntas gratuitas! <br> 
+            <button onclick="simularPago()">Pasar a Premium</button>
+        </div>
+        `;
+        document.getElementById('subOpciones').style.display = 'none';
+        document.getElementById('mainOptions').style.display = 'none';
+    }
+
+    // Función para verificar si las mascotas tienen diagnósticos y desactivar los botones de editar y eliminar si es necesario
+    function gestionarMascotasConDiagnostico() {
+        const mascotas = document.querySelectorAll('.mascota'); // Selector para obtener las mascotas en la tabla
+        mascotas.forEach(mascota => {
+        const tieneDiagnostico = mascota.getAttribute('data-diagnostico') === 'true'; // Verifica si la mascota tiene diagnóstico
+        const editarButton = mascota.querySelector('.editar');
+        const eliminarButton = mascota.querySelector('.eliminar');
+
+        if (tieneDiagnostico) {
+            mascota.classList.add('standby'); // Agrega clase "standby" para identificar las mascotas con diagnóstico
+            editarButton.disabled = true; // Desactiva botón de editar
+            eliminarButton.disabled = true; // Desactiva botón de eliminar
+        }
+        });
+    }
 
 </script>
 

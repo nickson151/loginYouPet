@@ -181,73 +181,102 @@ def premium():
     return render_template('premium.html', usuario=usuario, mascotas=mascotas)
 
 
-
 # Ruta para agregar una nueva mascota
 @app.route('/agregar-mascota', methods=['POST'])
 def agregar_mascota():
-    if request.method == 'POST':
-        nombre = request.form['nombre']
-        especie = request.form['especie']
-        edad = request.form['edad']
-        raza = request.form['raza']
-        id_usuario = session.get('id')
+    nombre = request.form['nombre']
+    especie = request.form['especie']
+    edad = request.form['edad']
+    raza = request.form['raza']
+    id_usuario = session.get('id')
 
-        if not id_usuario:
-            return redirect('/login')
+    if not id_usuario:
+        return jsonify({'error': 'Usuario no autenticado'}), 401
 
-        try:
-            cur = mysql.connection.cursor()
-            cur.execute("""
-                INSERT INTO mascotas (id_usuario, nombre, especie, edad, raza) 
-                VALUES (%s, %s, %s, %s, %s)
-            """, (id_usuario, nombre, especie, edad, raza))
-            mysql.connection.commit()
-            cur.close()
-            return redirect('/premium')
-        except Exception as e:
-            return render_template('premium.html', mensaje="Error al agregar la mascota: {}".format(e))
+    try:
+        # Validar que el usuario no exceda el límite de mascotas
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT COUNT(*) as total FROM mascotas WHERE id_usuario = %s", (id_usuario,))
+        total_mascotas = cur.fetchone()['total']
+        if total_mascotas >= 3:
+            return jsonify({'error': 'No puedes tener más de 3 mascotas'}), 400
+
+        # Agregar la nueva mascota
+        cur.execute("""
+            INSERT INTO mascotas (id_usuario, nombre, especie, edad, raza) 
+            VALUES (%s, %s, %s, %s, %s)
+        """, (id_usuario, nombre, especie, edad, raza))
+        mysql.connection.commit()
+
+        # Obtener el id de la mascota recién insertada
+        cur.execute("SELECT LAST_INSERT_ID() as id")
+        id_mascota = cur.fetchone()['id']
+        cur.close()
+
+        # Retornar los datos de la mascota recién agregada
+        mascota = {
+            'id': id_mascota,
+            'nombre': nombre,
+            'especie': especie,
+            'edad': edad,
+            'raza': raza
+        }
+
+        return jsonify({'success': 'Mascota agregada correctamente', 'mascota': mascota}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # Ruta para actualizar una mascota
-@app.route('/actualizar-mascota/<int:id>', methods=['POST'])
-def actualizar_mascota(id):
-    if request.method == 'POST':
-        nombre = request.form['nombre']
-        especie = request.form['especie']
-        edad = request.form['edad']
-        raza = request.form['raza']
+@app.route('/actualizar-mascota/<int:id_mascota>', methods=['POST'])
+def actualizar_mascota(id_mascota):
+    nombre = request.form['nombre']
+    especie = request.form['especie']
+    edad = request.form['edad']
+    raza = request.form['raza']
 
-        try:
-            cur = mysql.connection.cursor()
-            cur.execute("""
-                UPDATE mascotas 
-                SET nombre = %s, especie = %s, edad = %s, raza = %s 
-                WHERE id = %s
-            """, (nombre, especie, edad, raza, id))
-            mysql.connection.commit()
-            cur.close()
-            return redirect('/premium')
-        except Exception as e:
-            return render_template('premium.html', mensaje="Error al actualizar la mascota: {}".format(e))
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            UPDATE mascotas 
+            SET nombre = %s, especie = %s, edad = %s, raza = %s 
+            WHERE id = %s
+        """, (nombre, especie, edad, raza, id_mascota))
+        mysql.connection.commit()
+        cur.close()
+
+        mascota = {
+            'id': id_mascota,
+            'nombre': nombre,
+            'especie': especie,
+            'edad': edad,
+            'raza': raza
+        }
+
+        return jsonify({'success': True, 'mascota': mascota}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 # Ruta para eliminar una mascota (validando diagnósticos)
-@app.route('/eliminar-mascota/<int:id>', methods=['POST'])
-def eliminar_mascota(id):
+@app.route('/eliminar-mascota/<int:id_mascota>', methods=['POST'])
+def eliminar_mascota(id_mascota):
     try:
         cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM diagnosticos WHERE id_mascota = %s", (id,))
+        cur.execute("SELECT * FROM diagnosticos WHERE id_mascota = %s", (id_mascota,))
         diagnosticos = cur.fetchone()
 
         if diagnosticos:
-            return render_template('premium.html', mensaje="No puedes eliminar una mascota con diagnósticos.")
+            return jsonify({'success': False, 'error': 'No puedes eliminar una mascota con diagnósticos.'}), 400
 
-        cur.execute("DELETE FROM mascotas WHERE id = %s", (id,))
+        cur.execute("DELETE FROM mascotas WHERE id_mascota = %s", (id_mascota,))
         mysql.connection.commit()
         cur.close()
-        return redirect('/premium')
+
+        return jsonify({'success': True}), 200
     except Exception as e:
-        return render_template('premium.html', mensaje="Error al eliminar la mascota: {}".format(e))
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 #---------------------------------------------------

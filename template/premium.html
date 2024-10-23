@@ -35,7 +35,7 @@
                                 <td>
                                     <button class="btn btn-warning btn-sm" 
                                             onclick="editarMascota({
-                                                id: '{{ mascota.id }}', 
+                                                id_mascota: '{{ mascota.id_mascota}}', 
                                                 nombre: '{{ mascota.nombre }}', 
                                                 especie: '{{ mascota.especie }}', 
                                                 edad: '{{ mascota.edad }}', 
@@ -44,24 +44,13 @@
                                         Editar
                                     </button>
                                     <button class="btn btn-danger btn-sm" 
-                                            onclick="eliminarMascota('{{ mascota.id }}')">
+                                            onclick="eliminarMascota('{{ mascota.id_mascota }}')">
                                         Eliminar
                                     </button>
                                 </td>
                             </tr>
                             {% endfor %}
-                        {% else %}
-                            <!-- Si no hay mascotas, mostrar filas vacías -->
-                            <tr>
-                                <td colspan="5" class="text-center">No hay mascotas registradas</td>
-                            </tr>
-                            <tr>
-                                <td><em>Sin nombre</em></td>
-                                <td><em>Sin especie</em></td>
-                                <td><em>Sin edad</em></td>
-                                <td><em>Sin raza</em></td>
-                                <td><em>Sin acciones</em></td>
-                            </tr>
+                        
                         {% endif %}
                     </tbody>
                 </table>
@@ -80,9 +69,9 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form id="mascota-form" method="POST" action="/agregar-mascota">
+                <form id="mascota-form" method="POST" action="/agregar-mascota" onsubmit="guardarMascota(event)">
                     <div class="modal-body">
-                        <input type="hidden" id="mascota-id" name="id">
+                        <input type="hidden" id="mascota-id" name="id_mascota">
                         <div class="form-group">
                             <label for="nombre">Nombre</label>
                             <input type="text" class="form-control" id="nombre" name="nombre" required>
@@ -361,38 +350,107 @@
 
     // Cargar datos de mascota al modal para editar
     function editarMascota(mascota) {
-        document.getElementById('mascota-id').value = mascota.id;
+        // Abrir el modal de edición con los datos de la mascota seleccionada
+        document.getElementById('mascota-id').value = mascota.id;  // Asegúrate de que sea el campo correcto de la base de datos
         document.getElementById('nombre').value = mascota.nombre;
         document.getElementById('especie').value = mascota.especie;
         document.getElementById('edad').value = mascota.edad;
         document.getElementById('raza').value = mascota.raza;
-        
+
+        // Cambiar el título del modal a "Editar Mascota"
         document.getElementById('addMascotaModalLabel').textContent = 'Editar Mascota';
+
+        // Cambiar el action del formulario para que sea la ruta de actualización
+        document.getElementById('mascota-form').onsubmit = function(event) {
+            event.preventDefault();  // Evitar recarga
+            actualizarMascota(mascota.id);
+        };
+
+        // Abrir el modal
         $('#addMascotaModal').modal('show');
     }
 
+    // Actualizar la mascota
+    function actualizarMascota(id_mascota) {
+        const formData = new FormData(document.getElementById('mascota-form'));
+
+        fetch(`/actualizar-mascota/${id_mascota}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Actualizar la fila correspondiente en la tabla
+                const row = document.getElementById(`mascota-${id_mascota}`);
+                row.innerHTML = `
+                    <td>${data.mascota.nombre}</td>
+                    <td>${data.mascota.especie}</td>
+                    <td>${data.mascota.edad}</td>
+                    <td>${data.mascota.raza}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" 
+                                onclick="editarMascota(${JSON.stringify(data.mascota)})">
+                            Editar
+                        </button>
+                        <button class="btn btn-danger btn-sm" 
+                                onclick="eliminarMascota('${id_mascota}')">
+                            Eliminar
+                        </button>
+                    </td>
+                `;
+                $('#addMascotaModal').modal('hide');  // Cerrar el modal
+            } else {
+                alert('Error al actualizar mascota');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+
+
+
 
     // Eliminar mascota
-    function eliminarMascota(id) {
-        if (confirm('¿Estás seguro de eliminar esta mascota?')) {
-            fetch(`/eliminar-mascota/${id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+    function eliminarMascota(id_mascota) {
+        if (confirm('¿Estás seguro de que quieres eliminar esta mascota?')) {
+            fetch(`/eliminar-mascota/${id_mascota}`, {
+                method: 'POST'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById(`mascota-${id}`).remove();
-                    alert('Mascota eliminada exitosamente');
+                    // Remover la fila de la tabla
+                    const row = document.getElementById(`mascota-${id_mascota}`);
+                    row.remove();
                 } else {
-                    alert('Error al eliminar la mascota');
+                    alert(data.error || 'Error al eliminar la mascota');
                 }
             })
             .catch(error => console.error('Error:', error));
         }
     }
+
+    function actualizarMascotaEnTabla(mascota) {
+        const row = document.getElementById(`mascota-${mascota.id_mascota}`);  // Cambiar a id_mascota
+        row.innerHTML = `
+            <td>${mascota.nombre}</td>
+            <td>${mascota.especie}</td>
+            <td>${mascota.edad}</td>
+            <td>${mascota.raza}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" 
+                    onclick="editarMascota(${JSON.stringify(mascota)})">
+                    Editar
+                </button>
+                <button class="btn btn-danger btn-sm" 
+                    onclick="eliminarMascota(${mascota.id_mascota})">  <!-- Cambiar a id_mascota -->
+                    Eliminar
+                </button>
+            </td>
+        `;
+    }
+
 
     // Función para agregar o editar mascotas
     $('#mascota-form').on('submit', function(e) {
@@ -408,6 +466,54 @@
         });
     });
 
+    function guardarMascota(event) {
+        event.preventDefault(); // Evita que el formulario recargue la página
+        
+        const form = document.getElementById('mascota-form');
+        const formData = new FormData(form);
+
+        fetch('/agregar-mascota', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Actualizar la tabla con la nueva mascota
+                agregarMascotaATabla(data.mascota);
+                
+                // Cerrar el modal y reiniciar el formulario
+                $('#addMascotaModal').modal('hide');
+                form.reset();
+            } else {
+                alert(data.error || 'Error al agregar la mascota');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function agregarMascotaATabla(mascota) {
+        const table = document.getElementById('mascotas-list');
+        const newRow = document.createElement('tr');
+        newRow.id = `mascota-${mascota.id}`;
+        newRow.innerHTML = `
+            <td>${mascota.nombre}</td>
+            <td>${mascota.especie}</td>
+            <td>${mascota.edad}</td>
+            <td>${mascota.raza}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" 
+                    onclick="editarMascota(${JSON.stringify(mascota)})">
+                    Editar
+                </button>
+                <button class="btn btn-danger btn-sm" 
+                    onclick="eliminarMascota(${mascota.id})">
+                    Eliminar
+                </button>
+            </td>
+        `;
+        table.appendChild(newRow);
+    }
     
 </script>
 
@@ -518,4 +624,3 @@
         background-color: #F57C00;
     }
 </style>
-
