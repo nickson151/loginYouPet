@@ -6,12 +6,16 @@
     <h1>Bienvenido Usuario Premium</h1>
     <h2 class="text-center mt-5 mb-5 text-primary">Gestión de Mascotas</h2>
 
+
     <!-- Tabla de mascotas -->
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-12">
                 <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addMascotaModal">
                     <i class="fas fa-plus"></i> Agregar Mascota
+                </button>
+                <button class="btn btn-primary mb-3" id="mostrarMascotasBtn" onclick="mostrarMascotas()">
+                    Mostrar Mascotas
                 </button>
 
                 <table class="table table-hover table-striped">
@@ -54,7 +58,7 @@
                         {% endif %}
                     </tbody>
                 </table>
-
+                
             </div>
         </div>
     </div>
@@ -79,6 +83,7 @@
                         <div class="form-group">
                             <label for="especie">Especie</label>
                             <select class="form-control" id="especie" name="especie" required>
+                                <option value="">Seleccionar</option>
                                 <option value="perro">Perro</option>
                                 <option value="gato">Gato</option>
                             </select>
@@ -111,6 +116,7 @@
 
 </div>
 
+
     <!-- Iconos debajo de la tabla -->
     <div class="icons-container">
         <form action="/subir-archivo" method="POST" enctype="multipart/form-data">
@@ -118,6 +124,20 @@
                 <label for="archivo" class="form-label">Agregar PDF:</label>
                 <input type="file" name="archivo" class="form-control" accept=".pdf">
                 <button type="submit" class="btn btn-primary mt-2">Subir PDF</button>
+            </div>
+            <!-- Mostrar archivos PDF subidos -->
+            <h4>Archivos PDF Subidos</h4>
+            <div class="pdf-container">
+                {% if archivos %}
+                    {% for archivo in archivos %}
+                    <div class="archivo-item">
+                        <a href="{{ archivo.ruta_archivo }}" target="_blank">{{ archivo.nombre_archivo }}</a>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarArchivo('{{ archivo.id_archivo }}')">Eliminar</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No has subido ningún archivo PDF.</p>
+                {% endif %}
             </div>
         </form>
         
@@ -127,10 +147,27 @@
                 <input type="file" name="archivo" class="form-control" accept="image/*">
                 <button type="submit" class="btn btn-primary mt-2">Subir Foto</button>
             </div>
+            <!-- Mostrar fotos subidas -->
+            <h4>Fotos Subidas</h4>
+            <div class="foto-container">
+                {% if fotos %}
+                    {% for foto in fotos %}
+                    <div class="foto-item">
+                        <img src="{{ foto.ruta_foto }}" class="img-thumbnail" alt="Foto de mascota">
+                        <button class="btn btn-danger btn-sm" onclick="eliminarFoto('{{ foto.id_foto }}')">Eliminar</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No has subido ninguna foto.</p>
+                {% endif %}
+            </div>
         </form>
     </div>
     
 </div>
+
+
+
 
 <!-- Chatbot HTML -->
 <div class="chatbot-container" id="chatbotContainer">
@@ -157,6 +194,97 @@
 
 
 <script>
+    $(document).ready(function() {
+        // Manejar el envío del formulario con AJAX
+        $('#mascota-form').on('submit', function(event) {
+            event.preventDefault(); // Prevenir el comportamiento predeterminado del formulario
+            
+            $.ajax({
+                url: '/agregar-mascota',
+                method: 'POST',
+                data: {
+                    nombre: $('#nombre').val(),
+                    especie: $('#especie').val(),
+                    edad: $('#edad').val(),
+                    raza: $('#raza').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Agregar la nueva mascota a la tabla sin recargar la página
+                        $('#mascotas-list').append(`
+                            <tr id="mascota-${response.mascota.id}">
+                                <td>${response.mascota.nombre}</td>
+                                <td>${response.mascota.especie}</td>
+                                <td>${response.mascota.edad}</td>
+                                <td>${response.mascota.raza}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" 
+                                            onclick="editarMascota({
+                                                id_mascota: '${response.mascota.id}', 
+                                                nombre: '${response.mascota.nombre}', 
+                                                especie: '${response.mascota.especie}', 
+                                                edad: '${response.mascota.edad}', 
+                                                raza: '${response.mascota.raza}'
+                                            })">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" 
+                                            onclick="eliminarMascota('${response.mascota.id}')">
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                        $('#addMascotaModal').modal('hide'); // Cerrar el modal
+                    } else if (response.error) {
+                        alert(response.error); // Manejar errores
+                    }
+                },
+                error: function(err) {
+                    alert('Error al agregar la mascota. Inténtalo de nuevo.');
+                }
+            });
+        });
+    });
+    
+    document.getElementById('mostrarMascotasBtn').addEventListener('click', function() {
+        // Hacer una solicitud al backend para obtener las mascotas
+        fetch('/obtener_mascotas')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                // Llenar la tabla con los datos recibidos
+                const mascotasList = document.getElementById('mascotas-list');
+                mascotasList.innerHTML = '';  // Limpiar cualquier contenido previo
+                
+                data.forEach(mascota => {
+                    const row = `
+                        <tr id="mascota-${mascota.id_mascota}">
+                            <td>${mascota.nombre}</td>
+                            <td>${mascota.especie}</td>
+                            <td>${mascota.edad}</td>
+                            <td>${mascota.raza}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" 
+                                    onclick="editarMascota(${JSON.stringify(mascota)})">
+                                    Editar
+                                </button>
+                                <button class="btn btn-danger btn-sm" 
+                                    onclick="eliminarMascota(${mascota.id_mascota})">
+                                    Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    mascotasList.innerHTML += row;
+                });
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+
     document.querySelectorAll('form[action^="/eliminar-mascota"]').forEach(form => {
         form.addEventListener('submit', function (e) {
             if (!confirm('¿Estás seguro de que quieres eliminar esta mascota?')) {
@@ -296,13 +424,6 @@
         subOpcionesDiv.innerHTML = opcionesHTML;
     }
 
-    function mostrarResultado(resultado) {
-        const chatbotBody = document.getElementById('chatbotBody');
-        chatbotBody.innerHTML += `<div class="chat-message">${resultado}</div>`;
-        document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
-        document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
-    }
-
     function sendMessage() {
         const userInput = document.getElementById('userInput').value;
         if (userInput.trim() !== '') {
@@ -310,6 +431,15 @@
             document.getElementById('userInput').value = ''; // Limpiar campo de entrada
         }
     }
+
+    function mostrarResultado(resultado) {
+        const chatbotBody = document.getElementById('chatbotBody');
+        chatbotBody.innerHTML += `<div class="chat-message">${resultado}</div>`;
+        document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
+        document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
+    }
+
+    
 
     function mostrarMascotas() {
         // Hacer una solicitud AJAX a la ruta de 'obtener_mascotas'
@@ -348,66 +478,56 @@
     }
 
 
-    // Cargar datos de mascota al modal para editar
     function editarMascota(mascota) {
-        // Abrir el modal de edición con los datos de la mascota seleccionada
-        document.getElementById('mascota-id').value = mascota.id;  // Asegúrate de que sea el campo correcto de la base de datos
+        // Asegurarse de usar siempre mascota.id_mascota
+        document.getElementById('mascota-id').value = mascota.id_mascota; 
         document.getElementById('nombre').value = mascota.nombre;
         document.getElementById('especie').value = mascota.especie;
         document.getElementById('edad').value = mascota.edad;
         document.getElementById('raza').value = mascota.raza;
 
-        // Cambiar el título del modal a "Editar Mascota"
-        document.getElementById('addMascotaModalLabel').textContent = 'Editar Mascota';
+        document.getElementById('addMascotaModalLabel').innerText = 'Editar Mascota';
+        document.getElementById('mascota-form').action = `/actualizar-mascota/${mascota.id_mascota}`; 
 
-        // Cambiar el action del formulario para que sea la ruta de actualización
-        document.getElementById('mascota-form').onsubmit = function(event) {
-            event.preventDefault();  // Evitar recarga
-            actualizarMascota(mascota.id);
-        };
+        $('#addMascotaModal').modal('show');
+    }
+
+    function actualizarMascotaEnTabla(mascota) {
+        const row = document.getElementById(`mascota-${mascota.id_mascota}`);  // Cambiar a id_mascota
+        row.innerHTML = `
+            <td>${mascota.nombre}</td>
+            <td>${mascota.especie}</td>
+            <td>${mascota.edad}</td>
+            <td>${mascota.raza}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="editarMascota(${JSON.stringify(mascota)})">
+                    Editar
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="eliminarMascota(${mascota.id_mascota})">  <!-- Cambiar a id_mascota -->
+                    Eliminar
+                </button>
+            </td>
+        `;
+    }
+
+
+    function agregarMascota() {
+        // Limpiar los campos del formulario
+        document.getElementById('mascota-id').value = '';
+        document.getElementById('nombre').value = '';
+        document.getElementById('especie').value = '';
+        document.getElementById('edad').value = '';
+        document.getElementById('raza').value = '';
+
+        // Cambiar el título del modal
+        document.getElementById('addMascotaModalLabel').innerText = 'Agregar Mascota';
+
+        // Cambiar la acción del formulario para agregar una mascota
+        document.getElementById('mascota-form').action = '/agregar-mascota';
 
         // Abrir el modal
         $('#addMascotaModal').modal('show');
     }
-
-    // Actualizar la mascota
-    function actualizarMascota(id_mascota) {
-        const formData = new FormData(document.getElementById('mascota-form'));
-
-        fetch(`/actualizar-mascota/${id_mascota}`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Actualizar la fila correspondiente en la tabla
-                const row = document.getElementById(`mascota-${id_mascota}`);
-                row.innerHTML = `
-                    <td>${data.mascota.nombre}</td>
-                    <td>${data.mascota.especie}</td>
-                    <td>${data.mascota.edad}</td>
-                    <td>${data.mascota.raza}</td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" 
-                                onclick="editarMascota(${JSON.stringify(data.mascota)})">
-                            Editar
-                        </button>
-                        <button class="btn btn-danger btn-sm" 
-                                onclick="eliminarMascota('${id_mascota}')">
-                            Eliminar
-                        </button>
-                    </td>
-                `;
-                $('#addMascotaModal').modal('hide');  // Cerrar el modal
-            } else {
-                alert('Error al actualizar mascota');
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
-
-
 
 
 
@@ -429,26 +549,6 @@
             })
             .catch(error => console.error('Error:', error));
         }
-    }
-
-    function actualizarMascotaEnTabla(mascota) {
-        const row = document.getElementById(`mascota-${mascota.id_mascota}`);  // Cambiar a id_mascota
-        row.innerHTML = `
-            <td>${mascota.nombre}</td>
-            <td>${mascota.especie}</td>
-            <td>${mascota.edad}</td>
-            <td>${mascota.raza}</td>
-            <td>
-                <button class="btn btn-warning btn-sm" 
-                    onclick="editarMascota(${JSON.stringify(mascota)})">
-                    Editar
-                </button>
-                <button class="btn btn-danger btn-sm" 
-                    onclick="eliminarMascota(${mascota.id_mascota})">  <!-- Cambiar a id_mascota -->
-                    Eliminar
-                </button>
-            </td>
-        `;
     }
 
 
@@ -513,6 +613,100 @@
             </td>
         `;
         table.appendChild(newRow);
+    }
+
+    // Habilitar campos de edición
+    function habilitarEdicion(id_mascota) {
+        document.getElementById('nombre-' + id_mascota).disabled = false;
+        document.getElementById('especie-' + id_mascota).disabled = false;
+        document.getElementById('edad-' + id_mascota).disabled = false;
+        document.getElementById('raza-' + id_mascota).disabled = false;
+
+        // Mostrar el botón de guardar
+        document.getElementById('guardar-' + id_mascota).classList.remove('d-none');
+    }
+
+    // Guardar cambios al servidor
+    function guardarEdicion(id_mascota) {
+        const nombre = document.getElementById('nombre-' + id_mascota).value;
+        const especie = document.getElementById('especie-' + id_mascota).value;
+        const edad = document.getElementById('edad-' + id_mascota).value;
+        const raza = document.getElementById('raza-' + id_mascota).value;
+
+        fetch(`/actualizar-mascota/${id_mascota}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `nombre=${nombre}&especie=${especie}&edad=${edad}&raza=${raza}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Mascota actualizada con éxito');
+                // Deshabilitar nuevamente los campos de edición
+                document.getElementById('nombre-' + id_mascota).disabled = true;
+                document.getElementById('especie-' + id_mascota).disabled = true;
+                document.getElementById('edad-' + id_mascota).disabled = true;
+                document.getElementById('raza-' + id_mascota).disabled = true;
+
+                // Ocultar el botón de guardar
+                document.getElementById('guardar-' + id_mascota).classList.add('d-none');
+            } else {
+                alert('Error actualizando la mascota: ' + data.error);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function abrirModal(ruta, tipo) {
+        const modal = document.getElementById('mediaModal');
+        const mediaContent = document.getElementById('mediaContent');
+
+        if (tipo === 'foto') {
+            mediaContent.innerHTML = `<img src="${ruta}" class="img-fluid">`;
+        } else if (tipo === 'pdf') {
+            mediaContent.innerHTML = `<embed src="${ruta}" width="100%" height="500px" type="application/pdf">`;
+        }
+        
+        $('#mediaModal').modal('show');
+    }
+
+    
+    function eliminarFoto(id_foto) {
+        if (confirm("¿Estás seguro de que quieres eliminar esta foto?")) {
+            fetch(`/eliminar-foto/${id_foto}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Si se elimina exitosamente, actualiza la página o remueve la foto
+                    location.reload();  // Recarga la página para ver los cambios
+                } else {
+                    alert("Hubo un error al eliminar la foto");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    function eliminarArchivo(id_archivo) {
+        if (confirm("¿Estás seguro de que quieres eliminar este archivo?")) {
+            fetch(`/eliminar-archivo/${id_archivo}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Si se elimina exitosamente, actualiza la página o remueve el archivo
+                    location.reload();  // Recarga la página para ver los cambios
+                } else {
+                    alert("Hubo un error al eliminar el archivo");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
     }
     
 </script>
