@@ -1,77 +1,43 @@
 {% include("cabecera.html") %}
 
-<h1 class="text-center mt-5 mb-5 text-primary">Editar Mascota</h1>
-
-<div class="container">
-    <div class="card shadow">
-        <div class="card-body">
-            <!-- Formulario para editar una mascota -->
-            <form id="editMascotaForm" action="/editar-mascota/{{ mascota.id_mascota }}" method="POST" onsubmit="return validarFormulario()">
-                <div class="row mb-3">
-                    <div class="col">
-                        <label>Nombre</label>
-                        <input type="text" class="form-control mb-3" name="nombre" id="nombre" value="{{ mascota.nombre }}" required>
+<!-- Modal para agregar/editar mascota -->
+<div class="modal fade" id="addMascotaModal" tabindex="-1" role="dialog" aria-labelledby="addMascotaModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMascotaModalLabel">Agregar Mascota</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="mascota-form" action="/agregar-mascota" method="POST" onsubmit="return validarFormulario()">
+                    <input type="hidden" id="mascota-id" value="">
+                    <div class="form-group">
+                        <label for="nombre">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" required>
                     </div>
-                    <div class="col">
-                        <label>Especie</label>
-                        <select class="form-control mb-3" name="especie" id="especie" required>
-                            <option value="perro" {% if mascota.especie == 'perro' %}selected{% endif %}>Perro</option>
-                            <option value="gato" {% if mascota.especie == 'gato' %}selected{% endif %}>Gato</option>
+                    <div class="form-group">
+                        <label for="especie">Especie</label>
+                        <select class="form-control" id="especie" required>
+                            <option value="perro">Perro</option>
+                            <option value="gato">Gato</option>
                         </select>
                     </div>
-                    <div class="col">
-                        <label>Edad</label>
-                        <input type="number" class="form-control mb-3" name="edad" id="edad" value="{{ mascota.edad }}" required min="0">
+                    <div class="form-group">
+                        <label for="edad">Edad</label>
+                        <input type="number" class="form-control" id="edad" required min="0">
                     </div>
-                    <div class="col">
-                        <label>Raza</label>
-                        <select class="form-control mb-3" name="raza" id="raza" required>
-                            <option value="Chihuahua" {% if mascota.raza == 'Chihuahua' %}selected{% endif %}>Chihuahua</option>
-                            <option value="Gato persa" {% if mascota.raza == 'Gato persa' %}selected{% endif %}>Gato persa</option>
+                    <div class="form-group">
+                        <label for="raza">Raza</label>
+                        <select class="form-control" id="raza" required>
+                            <option value="Chihuahua">Chihuahua</option>
+                            <option value="Gato persa">Gato persa</option>
                         </select>
                     </div>
-                    <div class="col">
-                        <label>Propietario</label>
-                        <select class="form-control mb-3" name="id_usuario" id="id_usuario" required>
-                            {% for usuario in usuarios %}
-                                <option value="{{ usuario.id }}" {% if usuario.id == mascota.id_usuario %}selected{% endif %}>{{ usuario.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-primary mb-3 mt-4" type="submit">Guardar</button>
-                    </div>
-                </div>
-            </form>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Link para cancelar -->
-<a href="/listar_mascotas" class="btn btn-secondary mt-3">Cancelar</a>
-
-<script>
-function validarFormulario() {
-    // Obtener los valores de los campos
-    var nombre = document.getElementById('nombre').value.trim();
-    var especie = document.getElementById('especie').value;
-    var edad = document.getElementById('edad').value;
-    var raza = document.getElementById('raza').value;
-    var id_usuario = document.getElementById('id_usuario').value;
-    
-    // Validar que los campos no estén vacíos
-    if (nombre === '' || especie === '' || edad === '' || raza === '' || id_usuario === '') {
-        alert("Todos los campos deben ser llenados.");
-        return false;
-    }
-
-    // Validar que la edad sea un número positivo       
-    if (edad < 0) {
-        alert("La edad debe ser un número positivo.");
-        return false;
-    }
-
-    // Confirmación antes de enviar el formulario
-    return confirm("¿Estás seguro de que deseas guardar los cambios?");
-}
-</script>

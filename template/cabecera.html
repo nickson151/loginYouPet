@@ -87,18 +87,18 @@
                     
                     <!-- Si no hay sesión activa, mostrar botón de registro -->
                     {% if not session.get('usuario') %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="/registro">Registro</a>
-                        </li>
-                    {% else %}
-                        <!-- Si hay sesión activa, deshabilitar el botón de registro -->
-                        <li class="nav-item">
-                            <a class="nav-link disabled-button" href="#" aria-disabled="true">Registro</a>
-                        </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/registro">Registro</a>
+                    </li>
+                    {% elif session.get('id_rol') in [2, 3] %}
+                    <!-- Deshabilitar botón de registro si es Usuario o Premium -->
+                    <li class="nav-item">
+                        <a class="nav-link disabled-button" href="#" aria-disabled="true">Registro</a>
+                    </li>
                     {% endif %}
-    
-                    {% if session.get('id_rol') in [1, 3] %}
-                    <!-- Solo mostrar "Listar Mascotas" para roles Administrador y Premium -->
+                    
+                    <!-- Mostrar opción "Listar Mascotas" solo para Administradores -->
+                    {% if session.get('id_rol') in [1] %}
                     <li class="nav-item">
                         <a class="nav-link" href="/listar_mascotas">Listar Mascotas</a>
                     </li>

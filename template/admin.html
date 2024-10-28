@@ -79,51 +79,52 @@
 <!-- Link para salir -->
 
 <script>
-function mostrarUsuarios() {
-    // Enviar una solicitud GET para recargar la lista de usuarios
-    window.location.href = '/admin';
-}
+    function mostrarUsuarios() {
+        // Enviar una solicitud GET para recargar la lista de usuarios
+        window.location.href = '/admin';
+    }
 
-function confirmarEliminacion() {
-    // Confirmar antes de eliminar un usuario
-    return confirm("¿Estás seguro de que deseas eliminar este registro?");
-}
+    function confirmarEliminacion() {
+        // Confirmar antes de eliminar un usuario
+        return confirm("¿Estás seguro de que deseas eliminar este registro?");
+    }
 
-function validarFormulario() {
-    // Obtener los valores de los campos
-    var nombre = document.getElementById('nombre').value.trim();
-    var correo = document.getElementById('correo').value.trim();
-    var password = document.getElementById('password').value;
-    var confirmarPassword = document.getElementById('confirmar_password').value;
+    function validarFormulario() {
+        // Obtener los valores de los campos
+        var nombre = document.getElementById('nombre').value.trim();
+        var correo = document.getElementById('correo').value.trim();
+        var password = document.getElementById('password').value;
+        var confirmarPassword = document.getElementById('confirmar_password').value;
+        
+        // Validar que los campos obligatorios estén llenos
+        if (nombre === '' || correo === '') {
+            alert("Todos los campos obligatorios deben ser llenados.");
+            return false;
+        }
+
+        // Validar formato del correo electrónico
+        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(correo)) {
+            alert("El correo electrónico ingresado no es válido.");
+            return false;
+        }
+
+        // Validar que las contraseñas coincidan solo si se están editando
+        if (password || confirmarPassword) {
+            if (password !== confirmarPassword) {
+                alert("Las contraseñas no coinciden.");
+                return false;
+            }
+
+            // Validar longitud mínima de la contraseña
+            if (password.length < 8) {
+                alert("La contraseña debe tener al menos 8 caracteres.");
+                return false;
+            }
+        }
+
+        // Confirmación antes de enviar el formulario
+        return confirm("¿Estás seguro de que deseas guardar los cambios?");
+    }
     
-    // Validar que los campos obligatorios estén llenos
-    if (nombre === '' || correo === '') {
-        alert("Todos los campos obligatorios deben ser llenados.");
-        return false;
-    }
-
-    // Validar formato del correo electrónico
-    var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(correo)) {
-        alert("El correo electrónico ingresado no es válido.");
-        return false;
-    }
-
-    // Validar que las contraseñas coincidan solo si se están editando
-    if (password || confirmarPassword) {
-        if (password !== confirmarPassword) {
-            alert("Las contraseñas no coinciden.");
-            return false;
-        }
-
-        // Validar longitud mínima de la contraseña
-        if (password.length < 8) {
-            alert("La contraseña debe tener al menos 8 caracteres.");
-            return false;
-        }
-    }
-
-    // Confirmación antes de enviar el formulario
-    return confirm("¿Estás seguro de que deseas guardar los cambios?");
-}
 </script>

@@ -3,20 +3,26 @@
 #pip3 install Flask
 #pip3 install Flask-MySQLdb
 #pip3 install MySQL
+#pip3 install mysql-connector
+#pip3 install mysql-connector-python
+#pip3 install mysql-connector-python-rf
 #Flask --version
 #pip3 install virtualenv
 #pip3 install pyswip
 #virtualenv env
-#entorno virtual:          cd env/Scripts
+#entorno virtual: cd env/Scripts
+#pip3 install Flask-Mail
+
 from functools import wraps
 from flask import redirect, session, url_for
 from datetime import timedelta, datetime
 import re, os
-from werkzeug.security import check_password_hash
-from werkzeug.security import generate_password_hash  # Importar para hacer hashing 
+import smtplib 
+from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 #activar entorno virtual:  .\activate
 from MySQLdb import IntegrityError  # Importar la excepción
+from mysql.connector.errors import IntegrityError
 #llamado archivo 
 from flask import Flask, flash, url_for, jsonify    
 #render template:  llama carpeta de funciones
@@ -24,17 +30,44 @@ import mysql.connector
 #redirect: llamados
 #llamar funciones de GET y POST
 from flask import  render_template, redirect, request, Response, session
+
 # llamada a la BD
 from flask_mysqldb import MySQL, MySQLdb
 #llamada a la libreria de pyswip
 from pyswip import Prolog
-from datetime import timedelta
+#python -m venv env
+#Activar entorno virtual, llegar ruta, prompt:
+#cd C:\xampp\htdocs\loginYouPet\env\Scripts\activate
+
+# Flask-Mail para el envío de correos electrónicos
+from flask_mail import Mail, Message
+#from app import app, mysql, mail
+
+
+
 
 #llamar a carpeta funcion Template  
 # BD login, name:entrada
 app = Flask(__name__, template_folder='template')
-
 app.permanent_session_lifetime = timedelta(minutes=30)  # Sesión expira en 30 minutos de inactividad
+app.config['MYSQL_HOST']='localhost'
+app.config['MYSQL_USER']='root'
+app.config['MYSQL_PASSWORD']=''
+app.config['MYSQL_DB']='YouPet'
+app.config['MYSQL_CURSORCLASS']='DictCursor'
+#inicializar mysql vcb 
+mysql = MySQL(app)
+
+
+# Configuración de Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'youpetiauan@gmail.com'  
+app.config['MAIL_PASSWORD'] = 'Campos20*'        
+# Inicializar Flask-Mail
+mail = Mail(app)
+
 
 # Establece el directorio donde está instalado SWI-Prolog
 os.environ['SWI_HOME_DIR'] = r'C:\Program Files\swipl'
@@ -46,13 +79,6 @@ try:
 except Exception as e:
     print(f"Error al inicializar Prolog: {e}")
 
-app.config['MYSQL_HOST']='localhost'
-app.config['MYSQL_USER']='root'
-app.config['MYSQL_PASSWORD']=''
-app.config['MYSQL_DB']='YouPet'
-app.config['MYSQL_CURSORCLASS']='DictCursor'
-#inicializar mysql vcb 
-mysql = MySQL(app)
 
 #la  " / "  indica el inicio usuario
 @app.route('/')
@@ -237,13 +263,29 @@ def agregar_mascota():
 # Ruta para actualizar una mascota
 @app.route('/actualizar-mascota/<int:id_mascota>', methods=['POST'])
 def actualizar_mascota(id_mascota):
-    nombre = request.form['nombre']
-    especie = request.form['especie']
-    edad = request.form['edad']
-    raza = request.form['raza']
+    nombre = request.form.get('nombre')
+    especie = request.form.get('especie')
+    edad = request.form.get('edad')
+    raza = request.form.get('raza')
+    
+    # Validación de los datos requeridos
+    if not all([nombre, especie, edad, raza]):
+        return jsonify({'success': False, 'error': 'Todos los campos son obligatorios'}), 400
 
     try:
         cur = mysql.connection.cursor()
+
+        # Verificar si la mascota existe y está asociada al usuario actual
+        cur.execute("SELECT id_usuario FROM mascotas WHERE id_mascota = %s", (id_mascota,))
+        resultado = cur.fetchone()
+
+        # Validación de permisos usando id_usuario en la sesión
+        if not resultado:
+            return jsonify({'success': False, 'error': 'Mascota no encontrada'}), 404
+        if resultado['id_usuario'] != session['id_usuario']:  # Usa el id de usuario en la sesión
+            return jsonify({'success': False, 'error': 'Acceso denegado'}), 403
+
+        # Actualizar la mascota
         cur.execute("""
             UPDATE mascotas 
             SET nombre = %s, especie = %s, edad = %s, raza = %s 
@@ -263,6 +305,7 @@ def actualizar_mascota(id_mascota):
         return jsonify({'success': True, 'mascota': mascota}), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 
@@ -471,6 +514,15 @@ def crear_registro():
         # Validar que las contraseñas coincidan
         if password != confirmar_password:
             return render_template('registro.html', mensaje="Las contraseñas no coinciden")
+        
+        # Comprobar si el correo ya está registrado
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM usuarios WHERE correo = %s", (correo,))
+        usuario_existente = cur.fetchone()  # Almacena el usuario si existe
+        cur.close()
+
+        if usuario_existente:
+            return render_template('registro.html', mensaje="El correo ya está registrado. Por favor intenta con otro.")
 
         try:
             # Hashear la contraseña antes de guardarla en la base de datos
@@ -484,7 +536,28 @@ def crear_registro():
             """, (nombre, correo, hashed_password))
             mysql.connection.commit()
 
+            
+            # Obtener los datos actuales del usuario recién registrado
+            cur.execute("SELECT nombre, correo FROM usuarios WHERE correo = %s", (correo,))
+            usuario_actual = cur.fetchone()  # Almacena los datos actuales del usuario en un diccionario
+
+            if usuario_actual:
+                nombre_usuario = usuario_actual['nombre']
+                correo_usuario = usuario_actual['correo']
+
+            cur.close()
+
+            # Enviar correo de bienvenida con el nombre del usuario
+            try:
+                mensaje_bienvenida = f"Hola {nombre_usuario}, gracias por registrarte en YouPet. ¡Esperamos que disfrutes de la plataforma!"
+                msg = Message("Bienvenido a YouPet", sender=app.config['MAIL_USERNAME'], recipients=[correo_usuario])
+                msg.body = mensaje_bienvenida
+                mail.send(msg)
+            except smtplib.SMTPAuthenticationError:
+                app.logger.error("Error de autenticación SMTP al intentar enviar el correo. Verifica tus credenciales.")
+
             return render_template("index.html", mensaje2="Registro exitoso")
+
 
         except IntegrityError as e:
             if "Duplicate entry" in str(e):
@@ -502,52 +575,59 @@ def crear_registro():
 UPLOAD_FOLDER_PDF = 'static/uploads/pdfs/'
 app.config['UPLOAD_FOLDER_PDF'] = UPLOAD_FOLDER_PDF
 
+# Subir archivo PDF
 @app.route('/subir-archivo', methods=['POST'])
 def subir_archivo():
-    # Obtener el id del usuario autenticado desde la sesión
     id_usuario = session.get('id')
 
-    # Verificar si el usuario está autenticado
     if not id_usuario:
         return jsonify({'error': 'Usuario no autenticado'}), 401
 
-    # Verificar si el archivo ha sido enviado en la solicitud
     if 'archivo' not in request.files:
         return jsonify({'error': 'No se seleccionó ningún archivo'}), 400
     
     archivo = request.files['archivo']
-    
-    # Verificar si se seleccionó un archivo
+    mascota_id = request.form.get('mascota_id')
+
+    if not mascota_id:
+        return jsonify({'error': 'No se seleccionó ninguna mascota'}), 400
+
+    # Verificar que la mascota pertenece al usuario autenticado
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT id_mascota FROM mascotas WHERE id_usuario = %s AND id_mascota = %s", (id_usuario, mascota_id))
+    mascota = cur.fetchone()
+
+    if not mascota:
+        return jsonify({'error': 'La mascota no pertenece al usuario autenticado'}), 403
+
     if archivo.filename == '':
         return jsonify({'error': 'No se seleccionó ningún archivo'}), 400
-    
-    # Verificar si el archivo es un PDF
+
     if archivo and archivo.filename.endswith('.pdf'):
         try:
-            # Asegurar el nombre del archivo y guardarlo en la carpeta de uploads
+            # Asegurar el nombre del archivo y guardarlo
             filename = secure_filename(archivo.filename)
             ruta_archivo = os.path.join(app.config['UPLOAD_FOLDER_PDF'], filename)
             archivo.save(ruta_archivo)
 
-            # Guardar la información del archivo en la base de datos, utilizando el id del usuario autenticado
-            cur = mysql.connection.cursor()
-            cur.execute("INSERT INTO archivos (id_usuario, nombre_archivo, ruta_archivo, fecha_subida) VALUES (%s, %s, %s, %s)",
-                        (id_usuario, filename, ruta_archivo, datetime.now()))
+            # Guardar la información en la base de datos
+            cur.execute("""
+                INSERT INTO archivos (id_mascota, id_usuario, nombre_archivo, ruta_archivo, fecha_subida)
+                VALUES (%s, %s, %s, %s, %s)
+                """, (mascota_id, id_usuario, filename, ruta_archivo, datetime.now()))
             mysql.connection.commit()
             cur.close()
 
-            # Retornar un mensaje de éxito
             return jsonify({'success': 'Archivo PDF subido exitosamente'}), 200
 
         except Exception as e:
-            # Manejar cualquier excepción que ocurra durante la operación
             return jsonify({'error': f'Error al subir el archivo: {str(e)}'}), 500
     else:
-        # Enviar un mensaje de error si el archivo no es un PDF
         return jsonify({'error': 'Formato no permitido. Solo archivos PDF son permitidos.'}), 400
 
 
 
+# Eliminar archivo PDF
 @app.route('/eliminar-archivo/<int:id_archivo>', methods=['DELETE'])
 def eliminar_archivo(id_archivo):
     id_usuario = session.get('id')
@@ -555,18 +635,26 @@ def eliminar_archivo(id_archivo):
     if not id_usuario:
         return jsonify({'error': 'Usuario no autenticado'}), 401
 
-    # Verificar que el archivo pertenezca al usuario autenticado
+    mascota_id = request.form.get('mascota_id')  # Asegúrate de obtener el id_mascota si es necesario.
+
+    # Consulta para asegurarse de que el archivo pertenece al usuario y la mascota
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM archivos WHERE id_archivo = %s AND id_usuario = %s", (id_archivo, id_usuario))
+    cur.execute("""
+        SELECT * FROM archivos WHERE id_archivo = %s AND id_usuario = %s AND id_mascota = %s
+        """, (id_archivo, id_usuario, mascota_id))
     archivo = cur.fetchone()
 
     if not archivo:
         return jsonify({'error': 'No tienes permiso para eliminar este archivo'}), 403
 
-    # Eliminar el archivo de la base de datos
+    # Eliminar archivo de la base de datos
     cur.execute("DELETE FROM archivos WHERE id_archivo = %s", (id_archivo,))
     mysql.connection.commit()
     cur.close()
+
+    # Opcional: eliminar el archivo del sistema de archivos
+    if os.path.exists(archivo['ruta_archivo']):
+        os.remove(archivo['ruta_archivo'])
 
     return jsonify({'success': 'Archivo eliminado exitosamente'}), 200
 
@@ -576,13 +664,14 @@ def eliminar_archivo(id_archivo):
 UPLOAD_FOLDER_FOTOS = 'static/uploads/fotos/'
 app.config['UPLOAD_FOLDER_FOTOS'] = UPLOAD_FOLDER_FOTOS
 
+# Subir fotos
 @app.route('/subir-fotos', methods=['POST'])
 def subir_fotos():
-    id_usuario = session.get('id')  # Obtener el id del usuario autenticado
+    id_usuario = session.get('id')
 
     if not id_usuario:
         return jsonify({'error': 'Usuario no autenticado'}), 401
-    
+
     if 'fotos' not in request.files:
         return jsonify({'error': 'No se seleccionaron fotos'}), 400
     
@@ -596,9 +685,16 @@ def subir_fotos():
     cur = mysql.connection.cursor()
     cur.execute("SELECT id_mascota FROM mascotas WHERE id_usuario = %s AND id_mascota = %s", (id_usuario, mascota_id))
     mascota = cur.fetchone()
-    
+
     if not mascota:
         return jsonify({'error': 'La mascota no pertenece al usuario autenticado'}), 403
+
+    # Verificar si ya hay 4 fotos asociadas a esta mascota
+    cur.execute("SELECT COUNT(*) as total_fotos FROM fotos WHERE id_mascota = %s", (mascota_id,))
+    total_fotos = cur.fetchone()['total_fotos']
+
+    if total_fotos >= 4:
+        return jsonify({'error': 'No puedes subir más de 4 fotos por mascota'}), 400
 
     for foto in fotos:
         if foto.filename != '' and foto.content_type.startswith('image/'):
@@ -607,16 +703,18 @@ def subir_fotos():
             foto.save(ruta_foto)
 
             # Guardar la ruta de la foto en la base de datos
-            cur.execute("INSERT INTO fotos (id_mascota, ruta_foto, fecha_subida) VALUES (%s, %s, %s)",
-                        (mascota_id, ruta_foto, datetime.now()))
+            cur.execute("""
+                INSERT INTO fotos (id_mascota, ruta_foto, fecha_subida)
+                VALUES (%s, %s, %s)
+                """, (mascota_id, ruta_foto, datetime.now()))
     
     mysql.connection.commit()
     cur.close()
-    
+
     return jsonify({'success': 'Fotos subidas exitosamente'}), 200
 
 
-
+# Eliminar foto
 @app.route('/eliminar-foto/<int:id_foto>', methods=['DELETE'])
 def eliminar_foto(id_foto):
     id_usuario = session.get('id')
@@ -624,21 +722,27 @@ def eliminar_foto(id_foto):
     if not id_usuario:
         return jsonify({'error': 'Usuario no autenticado'}), 401
 
-    # Verificar que la foto pertenezca a una mascota del usuario autenticado
     cur = mysql.connection.cursor()
-    cur.execute("SELECT f.id_foto FROM fotos f JOIN mascotas m ON f.id_mascota = m.id_mascota WHERE m.id_usuario = %s AND f.id_foto = %s", (id_usuario, id_foto))
+    cur.execute("""
+        SELECT f.id_foto, f.ruta_foto 
+        FROM fotos f 
+        JOIN mascotas m ON f.id_mascota = m.id_mascota 
+        WHERE m.id_usuario = %s AND f.id_foto = %s
+        """, (id_usuario, id_foto))
     foto = cur.fetchone()
 
     if not foto:
         return jsonify({'error': 'No tienes permiso para eliminar esta foto'}), 403
 
-    # Eliminar la foto de la base de datos
     cur.execute("DELETE FROM fotos WHERE id_foto = %s", (id_foto,))
     mysql.connection.commit()
     cur.close()
 
-    return jsonify({'success': 'Foto eliminada exitosamente'}), 200
+    # Opcional: eliminar la foto del sistema de archivos
+    if os.path.exists(foto['ruta_foto']):
+        os.remove(foto['ruta_foto'])
 
+    return jsonify({'success': 'Foto eliminada exitosamente'}), 200
 
 
 

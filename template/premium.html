@@ -119,12 +119,27 @@
 
     <!-- Iconos debajo de la tabla -->
     <div class="icons-container">
+
+        <!-- Subida de PDF -->
         <form action="/subir-archivo" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
                 <label for="archivo" class="form-label">Agregar PDF:</label>
                 <input type="file" name="archivo" class="form-control" accept=".pdf">
-                <button type="submit" class="btn btn-primary mt-2">Subir PDF</button>
             </div>
+
+            <!-- Seleccionar mascota -->
+            <div class="mb-3">
+                <label for="mascota" class="form-label">Seleccionar Mascota:</label>
+                <select name="mascota_id" class="form-control" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    {% for mascota in mascotas %}
+                        <option value="{{ mascota.id_mascota }}">{{ mascota.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-2">Subir PDF</button>
+
             <!-- Mostrar archivos PDF subidos -->
             <h4>Archivos PDF Subidos</h4>
             <div class="pdf-container">
@@ -140,13 +155,27 @@
                 {% endif %}
             </div>
         </form>
-        
-        <form action="/subir-archivo" method="POST" enctype="multipart/form-data">
+
+        <!-- Subida de Fotos -->
+        <form action="/subir-fotos" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
                 <label for="archivo" class="form-label">Agregar Foto:</label>
-                <input type="file" name="archivo" class="form-control" accept="image/*">
-                <button type="submit" class="btn btn-primary mt-2">Subir Foto</button>
+                <input type="file" name="fotos" class="form-control" accept="image/*" multiple>
             </div>
+
+            <!-- Seleccionar mascota -->
+            <div class="mb-3">
+                <label for="mascota" class="form-label">Seleccionar Mascota:</label>
+                <select name="mascota_id" class="form-control" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    {% for mascota in mascotas %}
+                        <option value="{{ mascota.id_mascota }}">{{ mascota.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-2">Subir Foto</button>
+
             <!-- Mostrar fotos subidas -->
             <h4>Fotos Subidas</h4>
             <div class="foto-container">
@@ -162,7 +191,9 @@
                 {% endif %}
             </div>
         </form>
+
     </div>
+
     
 </div>
 
@@ -176,7 +207,7 @@
         <button  id="minimizeButton" onclick="toggleChatbot()">-</button>
     </div>
     <div class="chatbot-body" id="chatbotBody">
-        <div class="chat-message">Requiero enseñarte como plantearme las preguntas:</div>
+        <div class="chat-message">Te sugieron me preguntes lo mas claro posible tus dudas, sobre tus mascotas registrads:</div>
         <div class="chatbot-options" id="mainOptions">
             <div class="chatbot-option" onclick="seleccionarOpcion('gato')">Gato</div>
             <div class="chatbot-option" onclick="seleccionarOpcion('perro')">Perro</div>

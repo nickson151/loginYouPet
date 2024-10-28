@@ -27,15 +27,16 @@
         </div>
       </div>
       <div class="chatbot-input">
-        <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <input type="text" id="userInput" placeholder="Escribe tu pregunta aquí..."
+          onkeypress="if(event.key === 'Enter') sendMessage()">
         <button onclick="sendMessage()">Enviar</button>
       </div>
     </div>
     <br><br><br>
     <div class="chat-message-intuitivo">
-      Bienvenido a YouPet IA, aquí puedes preguntar sobre la salud de tus mascotas. 
+      Bienvenido a YouPet IA, aquí puedes preguntar sobre la salud de tus mascotas.
     </div>
-    
+
 
 
     <!-- Login -->
@@ -45,7 +46,7 @@
       <form class="form-control" action="acceso-login" method="POST">
         <!-- Alertas -->
         <!--------->
-        <h1>YouPet IA</h1>  
+        <h1>YouPet IA</h1>
         <h1 class="text-center t">Login</h1>
         <!-- Mostrar mensaje de error si existe -->
         {% if mensaje %}
@@ -63,16 +64,17 @@
         <div class="form-group">
           <label for="exampleInputEmail1">Correo </label>
           <!-- entrada de texto lleva a la función : namme"txtCorreo" -->
-          <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" 
-          placeholder="Tu correo  " name="txtCorreo" required>
-          <small id="emailHelp" class="form-text text-muted">Nunca compartiremos su correo electrónico con nadie más.</small>
+          <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp"
+            placeholder="Tu correo  " name="txtCorreo" required>
+          <small id="emailHelp" class="form-text text-muted">Nunca compartiremos su correo electrónico con nadie
+            más.</small>
         </div>
         <!-- input -->
         <div class="form-group">
           <label for="exampleInputPassword1">Contraseña</label>
           <!-- entrada de texto lleva a la función : name"txtPassword" -->
-          <input type="password" class="form-control" id="exampleInputPassword1" 
-          placeholder="Tu contraseña"name="txtPassword" required>
+          <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Tu contraseña"
+            name="txtPassword" required>
         </div>
         <div class="form-check">
           <input type="checkbox" class="form-check-input" id="Check1" required>
@@ -83,19 +85,19 @@
           <button type="submit" class="btn btn-success" id="submitButton" disabled>Ingresar</button>
         </div>
       </form>
-      
-    <!-- Fin Login-->
+
+      <!-- Fin Login-->
     </div>
   </div>
   <div class="imagen-container"></div>
-    <img src="../static/youpetlogin.png" alt="YouPet Logo" class="imagen-youpet">
-  </div>
+  <img src="../static/youpetlogin.png" alt="YouPet Logo" class="imagen-youpet">
+</div>
 </div>
 
 <!-- Script para validar formulario de login -->
 <script>
   //desactivar el botón "Listar mascotas
-  window.onload = function() {
+  window.onload = function () {
     // Desactivar el botón de Listar mascotas
     const listarButton = document.getElementById('listarMascotas');
     if (listarButton) {
@@ -110,18 +112,18 @@
 
   // Función para validar que el email contenga "@"
   function validarCorreo() {
-      const emailValue = emailInput.value.trim();
-      return emailValue.includes('@');
+    const emailValue = emailInput.value.trim();
+    return emailValue.includes('@');
   }
 
   // Función para verificar si los campos están llenos y el checkbox está marcado
   function validarFormulario() {
-      const emailLleno = validarCorreo(); // Validar que el correo tenga un "@"
-      const passwordLleno = passwordInput.value.trim() !== ''; // Verificar que el campo de contraseña no esté vacío
-      const checkboxMarcado = checkbox.checked; // Verificar si el checkbox está marcado
+    const emailLleno = validarCorreo(); // Validar que el correo tenga un "@"
+    const passwordLleno = passwordInput.value.trim() !== ''; // Verificar que el campo de contraseña no esté vacío
+    const checkboxMarcado = checkbox.checked; // Verificar si el checkbox está marcado
 
-      // Habilitar el botón solo si todos los campos son válidos
-      submitButton.disabled = !(emailLleno && passwordLleno && checkboxMarcado);
+    // Habilitar el botón solo si todos los campos son válidos
+    submitButton.disabled = !(emailLleno && passwordLleno && checkboxMarcado);
   }
 
   // Asignar eventos de validación a los campos de correo, contraseña y checkbox
@@ -129,24 +131,46 @@
   passwordInput.addEventListener('input', validarFormulario);
   checkbox.addEventListener('change', validarFormulario);
 
+  //función para mostrar opciones después de la pregunta
+  function mostrarOpciones(animal) {
+    const subOpcionesDiv = document.getElementById('subOpciones');
+    const mainOptionsDiv = document.getElementById('mainOptions');
+
+    mainOptionsDiv.style.display = 'none'; // Ocultar opciones principales
+    subOpcionesDiv.style.display = 'grid'; // Mostrar subopciones
+
+    let opcionesHTML = `
+          <div class="chatbot-option" onclick="seleccionarSalud('${animal}', 'sano')">Está sano</div>
+          <div class="chatbot-option" onclick="seleccionarSalud('${animal}', 'enfermo')">Está enfermo</div>
+      `;
+
+    subOpcionesDiv.innerHTML = opcionesHTML;
+  }
+
+  function despedirChatbot() {
+    const chatbotBody = document.getElementById('chatbotBody');
+    chatbotBody.innerHTML += `<div class="chat-message">Gracias por usar YouPet IA. ¡Hasta pronto!</div>`;
+    
+  }
+
   let preguntasRealizadas = 0;
 
   function seleccionarOpcion(animal) {
     const subOpcionesDiv = document.getElementById('subOpciones');
     const mainOptionsDiv = document.getElementById('mainOptions');
-    
+
     mainOptionsDiv.style.display = 'none'; // Ocultar opciones principales
     subOpcionesDiv.style.display = 'grid'; // Mostrar subopciones
 
     let opcionesHTML = '';
 
     if (animal === 'gato') {
-        opcionesHTML = `
+      opcionesHTML = `
           <div class="chatbot-option" onclick="seleccionarSalud('gato', 'sano')">Está sano</div>
           <div class="chatbot-option" onclick="seleccionarSalud('gato', 'enfermo')">Está enfermo</div>
         `;
     } else if (animal === 'perro') {
-        opcionesHTML = `
+      opcionesHTML = `
           <div class="chatbot-option" onclick="seleccionarSalud('perro', 'sano')">Está sano</div>
           <div class="chatbot-option" onclick="seleccionarSalud('perro', 'enfermo')">Está enfermo</div>
         `;
@@ -158,23 +182,23 @@
   function seleccionarSalud(animal, estado) {
     const chatbotBody = document.getElementById('chatbotBody');
     const subOpcionesDiv = document.getElementById('subOpciones');
-    
+
     let opcionesHTML = '';
 
     if (estado === 'enfermo') {
-        if (animal === 'gato') {
-            opcionesHTML = `
+      if (animal === 'gato') {
+        opcionesHTML = `
               <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Vómito')">Vómito</div>
               <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Fiebre')">Fiebre</div>
             `;
-        } else if (animal === 'perro') {
-            opcionesHTML = `
+      } else if (animal === 'perro') {
+        opcionesHTML = `
               <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Rasquiña')">Rasquiña</div>
               <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Diarrea')">Diarrea</div>
             `;
-        }
+      }
     } else {
-        opcionesHTML = `
+      opcionesHTML = `
           <div class="chatbot-option" onclick="mostrarResultado('${animal}', 'Está sano')">Tu ${animal} está sano.</div>
         `;
     }
@@ -182,68 +206,79 @@
     subOpcionesDiv.innerHTML = opcionesHTML;
   }
 
+
+  let limiteAlcanzado = false; // Bandera para controlar el límite de preguntas
+
   function mostrarResultado(animal, sintoma) {
-    const chatbotBody = document.getElementById('chatbotBody');
-    preguntasRealizadas++;
+      const chatbotBody = document.getElementById('chatbotBody');
 
-    // Agregar mensaje al chatbot sobre la mascota y su síntoma
-    chatbotBody.innerHTML += `<div class="chat-message">Tu ${animal}: ${sintoma}</div>`;
+      if (limiteAlcanzado) {
+          return; // Si el límite ya ha sido alcanzado, no hacer nada
+      }
 
-    // Diagnóstico básico
-    diagnosticoBasico(animal, sintoma);
+      preguntasRealizadas++;
 
-    // Si se han realizado 3 preguntas, invitar a la versión premium
-    if (preguntasRealizadas === 3) {
-        invitarPremium();
-    }
+      // Agregar mensaje al chatbot sobre la mascota y su síntoma
+      chatbotBody.innerHTML += `<div class="chat-message">Tu ${animal}: ${sintoma}</div>`;
 
-    document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
-    document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
-  }
+      // Diagnóstico básico
+      let diagnostico = diagnosticoBasico(animal, sintoma); // Obtiene el diagnóstico
 
-  function diagnosticoBasico(animal, sintoma) {
-    const chatbotBody = document.getElementById('chatbotBody');
-    let diagnostico = '';
+      // Mostrar diagnóstico en el chatbot si no está vacío
+      if (diagnostico) {
+          chatbotBody.innerHTML += `<div class="chat-message">Diagnóstico básico: ${diagnostico}</div>`;
+      } else {
+          chatbotBody.innerHTML += `<div class="chat-message">Tu ${animal} está sano.</div>`;
+      }
 
-    // Diagnósticos básicos según el animal y el síntoma
-    if (animal === 'gato') {
-        if (sintoma === 'Vómito') {
-            diagnostico = 'Es posible que tu gato tenga problemas digestivos o gastritis.';
-        } else if (sintoma === 'Fiebre') {
-            diagnostico = 'Es posible que tu gato tenga una infección viral o bacteriana.';
-        }
-    } else if (animal === 'perro') {
-        if (sintoma === 'Rasquiña') {
-            diagnostico = 'Es posible que tu perro tenga alergias o una infección cutánea.';
-        } else if (sintoma === 'Diarrea') {
-            diagnostico = 'Es posible que tu perro tenga una infección gastrointestinal.';
-        }
-    }
+      // Si se han realizado 3 preguntas, invitar a la versión premium
+      if (preguntasRealizadas === 3) {
+          limiteAlcanzado = true; // Cambiar la bandera a verdadero
+          invitarPremium();
+      }
 
-    // Mostrar diagnóstico en el chatbot
-    chatbotBody.innerHTML += `<div class="chat-message">Diagnóstico básico: ${diagnostico}</div>`;
-
-    // Condición para mostrar opciones de editar o eliminar mascota
-    if (diagnostico !== '') {
-        chatbotBody.innerHTML += `
-            <div class="chat-message">¿Deseas editar o eliminar esta mascota?</div>
-            <div class="chatbot-option" onclick="editarMascota('${animal}')">Editar</div>
-            <div class="chatbot-option" onclick="eliminarMascota('${animal}')">Eliminar</div>
-        `;
-    }
+      document.getElementById('subOpciones').style.display = 'none'; // Ocultar subopciones después de seleccionar
+      document.getElementById('mainOptions').style.display = 'grid'; // Mostrar opciones principales nuevamente
   }
 
   function invitarPremium() {
-    const chatbotBody = document.getElementById('chatbotBody');
-    chatbotBody.innerHTML += `
-      <div class="chat-message invitacion-premium">
-        ¡Has alcanzado el límite de preguntas gratuitas! <br> 
-        Ingresa "LOGIN" para obtener más diagnósticos detallados con una cuenta premium.
-      </div>
-    `;
-    document.getElementById('subOpciones').style.display = 'none';
-    document.getElementById('mainOptions').style.display = 'none';
+      const chatbotBody = document.getElementById('chatbotBody');
+      chatbotBody.innerHTML += `
+        <div class="chat-message invitacion-premium">
+          --------------------//--------------------//
+          <br>
+          ¡Has alcanzado el límite de preguntas gratuitas! <br> 
+          Ingresa "LOGIN" para obtener más diagnósticos detallados con una cuenta premium.
+        </div>
+      `;
+      limiteAlcanzado = true; // Asegurar que no se pueda preguntar más
+      document.getElementById('subOpciones').style.display = 'none';
+      document.getElementById('mainOptions').style.display = 'none';
   }
+
+
+  // Función para obtener el diagnóstico
+  function diagnosticoBasico(animal, sintoma) {
+      let diagnostico = '';
+
+      // Diagnósticos básicos según el animal y el síntoma
+      if (animal === 'gato') {
+          if (sintoma === 'Vómito') {
+              diagnostico = 'Es posible que tu gato tenga problemas digestivos o gastritis.';
+          } else if (sintoma === 'Fiebre') {
+              diagnostico = 'Es posible que tu gato tenga una infección viral o bacteriana.';
+          }
+      } else if (animal === 'perro') {
+          if (sintoma === 'Rasquiña') {
+              diagnostico = 'Es posible que tu perro tenga alergias o una infección cutánea.';
+          } else if (sintoma === 'Diarrea') {
+              diagnostico = 'Es posible que tu perro tenga una infección gastrointestinal.';
+          }
+      }
+
+      return diagnostico; // Retorna el diagnóstico
+  }
+
 
   // Función para verificar si las mascotas tienen diagnósticos y desactivar los botones de editar y eliminar si es necesario
   function gestionarMascotasConDiagnostico() {
@@ -262,24 +297,25 @@
   }
 
   // Llamar a la función cuando la página cargue
-  window.onload = function() {
+  window.onload = function () {
     gestionarMascotasConDiagnostico();
   };
 
 </script>
 
 <style>
-  body, html {
+  body,
+  html {
     margin: 0;
     padding: 0;
     height: 100%;
     font-family: Arial, sans-serif;
   }
-  
+
   .chatbot-container {
     position: fixed;
     bottom: 50px;
-    left: 20px; 
+    left: 20px;
     width: 350px;
     border: 2px solid #FF9800;
     border-radius: 12px;
@@ -359,21 +395,28 @@
   }
 
   .contenedor-principal {
-  display: flex;
-  justify-content: space-between; /* Distribuye los elementos de manera que ocupen la izquierda y derecha */
-  align-items: center; /* Alinea el contenido verticalmente */
-  height: 100vh; /* Ocupa toda la altura de la pantalla */
+    display: flex;
+    justify-content: space-between;
+    /* Distribuye los elementos de manera que ocupen la izquierda y derecha */
+    align-items: center;
+    /* Alinea el contenido verticalmente */
+    height: 100vh;
+    /* Ocupa toda la altura de la pantalla */
   }
 
   .contenido-izquierda {
-    width: 70%; /* Ajusta el tamaño de la sección izquierda */
+    width: 70%;
+    /* Ajusta el tamaño de la sección izquierda */
   }
 
   .imagen-container {
     display: flex;
-    justify-content: center; /* Centra la imagen dentro del contenedor */
-    align-items: center; /* Alinea la imagen verticalmente */
-    width: 30%; /* Tamaño para el área de la imagen */
+    justify-content: center;
+    /* Centra la imagen dentro del contenedor */
+    align-items: center;
+    /* Alinea la imagen verticalmente */
+    width: 30%;
+    /* Tamaño para el área de la imagen */
   }
 
   .imagen-youpet {
@@ -383,19 +426,18 @@
   }
 
   .caja {
-  display: flex;
-  justify-content: flex-end; 
-  margin-right: -200px; 
+    display: flex;
+    justify-content: flex-end;
+    margin-right: -200px;
   }
 
   .form-control {
-    width: 350px; /* Ajusta el ancho del formulario según tu preferencia */
+    width: 350px;
+    /* Ajusta el ancho del formulario según tu preferencia */
     padding: 20px;
     border: 2px solid #FF9800;
     border-radius: 10px;
     background-color: #FFF3E0;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
-
-  
 </style>
