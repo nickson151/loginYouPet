@@ -118,19 +118,20 @@
 
 
     <!-- Iconos debajo de la tabla -->
-    <div class="icons-container">
+    <div class="upload-container cons-container">
 
         <!-- Subida de PDF -->
-        <form action="/subir-archivo" method="POST" enctype="multipart/form-data">
+        <form id="form-pdf" action="/subir-archivo" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
                 <label for="archivo" class="form-label">Agregar PDF:</label>
                 <input type="file" name="archivo" class="form-control" accept=".pdf">
             </div>
+            
 
             <!-- Seleccionar mascota -->
             <div class="mb-3">
-                <label for="mascota" class="form-label">Seleccionar Mascota:</label>
-                <select name="mascota_id" class="form-control" required>
+                <label for="mascota_pdf" class="form-label">Seleccionar Mascota:</label>
+                <select id="mascota_pdf" name="mascota_id" class="form-control" required>
                     <option value="" disabled selected>Selecciona una mascota</option>
                     {% for mascota in mascotas %}
                         <option value="{{ mascota.id_mascota }}">{{ mascota.nombre }}</option>
@@ -155,9 +156,11 @@
                 {% endif %}
             </div>
         </form>
+        <div class="pdf-container"></div>
+        <div id="mensaje-exito" style="display:none; color: green;"></div>
 
         <!-- Subida de Fotos -->
-        <form action="/subir-fotos" method="POST" enctype="multipart/form-data">
+        <form id="form-fotos" action="/subir-fotos" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
                 <label for="archivo" class="form-label">Agregar Foto:</label>
                 <input type="file" name="fotos" class="form-control" accept="image/*" multiple>
@@ -165,8 +168,8 @@
 
             <!-- Seleccionar mascota -->
             <div class="mb-3">
-                <label for="mascota" class="form-label">Seleccionar Mascota:</label>
-                <select name="mascota_id" class="form-control" required>
+                <label for="mascota_foto" class="form-label">Seleccionar Mascota:</label>
+                <select id="mascota_foto" name="mascota_id" class="form-control" required>
                     <option value="" disabled selected>Selecciona una mascota</option>
                     {% for mascota in mascotas %}
                         <option value="{{ mascota.id_mascota }}">{{ mascota.nombre }}</option>
@@ -176,6 +179,9 @@
 
             <button type="submit" class="btn btn-primary mt-2">Subir Foto</button>
 
+            <!-- Mensaje de éxito -->
+            <div id="mensaje-exito" style="display:none; color: green; margin-top: 10px;">Foto subida exitosamente</div>
+
             <!-- Mostrar fotos subidas -->
             <h4>Fotos Subidas</h4>
             <div class="foto-container">
@@ -183,7 +189,7 @@
                     {% for foto in fotos %}
                     <div class="foto-item">
                         <img src="{{ foto.ruta_foto }}" class="img-thumbnail" alt="Foto de mascota">
-                        <button class="btn btn-danger btn-sm" onclick="eliminarFoto('{{ foto.id_foto }}')">Eliminar</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFoto('{{ foto.id_foto }}')">Eliminar</button>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -191,6 +197,9 @@
                 {% endif %}
             </div>
         </form>
+
+        <div class="pdf-container"></div>
+        <div id="mensaje-exito" style="display:none; color: green;"></div>
 
     </div>
 
@@ -646,49 +655,7 @@
         table.appendChild(newRow);
     }
 
-    // Habilitar campos de edición
-    function habilitarEdicion(id_mascota) {
-        document.getElementById('nombre-' + id_mascota).disabled = false;
-        document.getElementById('especie-' + id_mascota).disabled = false;
-        document.getElementById('edad-' + id_mascota).disabled = false;
-        document.getElementById('raza-' + id_mascota).disabled = false;
-
-        // Mostrar el botón de guardar
-        document.getElementById('guardar-' + id_mascota).classList.remove('d-none');
-    }
-
-    // Guardar cambios al servidor
-    function guardarEdicion(id_mascota) {
-        const nombre = document.getElementById('nombre-' + id_mascota).value;
-        const especie = document.getElementById('especie-' + id_mascota).value;
-        const edad = document.getElementById('edad-' + id_mascota).value;
-        const raza = document.getElementById('raza-' + id_mascota).value;
-
-        fetch(`/actualizar-mascota/${id_mascota}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `nombre=${nombre}&especie=${especie}&edad=${edad}&raza=${raza}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Mascota actualizada con éxito');
-                // Deshabilitar nuevamente los campos de edición
-                document.getElementById('nombre-' + id_mascota).disabled = true;
-                document.getElementById('especie-' + id_mascota).disabled = true;
-                document.getElementById('edad-' + id_mascota).disabled = true;
-                document.getElementById('raza-' + id_mascota).disabled = true;
-
-                // Ocultar el botón de guardar
-                document.getElementById('guardar-' + id_mascota).classList.add('d-none');
-            } else {
-                alert('Error actualizando la mascota: ' + data.error);
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
+    
 
     function abrirModal(ruta, tipo) {
         const modal = document.getElementById('mediaModal');
@@ -704,42 +671,216 @@
     }
 
     
-    function eliminarFoto(id_foto) {
-        if (confirm("¿Estás seguro de que quieres eliminar esta foto?")) {
-            fetch(`/eliminar-foto/${id_foto}`, {
-                method: 'DELETE'
-            })
+    
+
+    document.addEventListener("DOMContentLoaded", function() {
+        cargarMascotas();
+    });
+
+    function cargarMascotas() {
+        fetch('/obtener_mascotas')
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // Si se elimina exitosamente, actualiza la página o remueve la foto
-                    location.reload();  // Recarga la página para ver los cambios
+                if (data.error) {
+                    console.error(data.error);
                 } else {
-                    alert("Hubo un error al eliminar la foto");
+                    // Seleccionar los elementos del select
+                    const selectMascotaPDF = document.getElementById('mascota_pdf');
+                    const selectMascotaFoto = document.getElementById('mascota_foto');
+
+                    // Limpiar las opciones actuales
+                    selectMascotaPDF.innerHTML = '<option value="" disabled selected>Selecciona una mascota</option>';
+                    selectMascotaFoto.innerHTML = '<option value="" disabled selected>Selecciona una mascota</option>';
+
+                    // Llenar con las mascotas obtenidas
+                    data.forEach(mascota => {
+                        const option = document.createElement('option');
+                        option.value = mascota.id_mascota;
+                        option.textContent = mascota.nombre;
+
+                        // Agregar las opciones a ambos selects
+                        selectMascotaPDF.appendChild(option.cloneNode(true));
+                        selectMascotaFoto.appendChild(option.cloneNode(true));
+                    });
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error('Error al obtener las mascotas:', error));
+    }
+
+    function actualizarArchivos(mascotaId) {
+        fetch(`/obtener-archivos/${mascotaId}`)
+            .then(response => response.json())
+            .then(data => {
+                const contenedor = document.getElementById('lista-archivos');
+                contenedor.innerHTML = ''; // Limpiar la lista
+
+                data.forEach(archivo => {
+                    const item = document.createElement('li');
+                    item.textContent = archivo.nombre_archivo;
+                    contenedor.appendChild(item);
+                });
+            })
+            .catch(error => console.error('Error al cargar archivos:', error));
+    }
+    
+    // Lógica para mostrar mensaje
+    function subirArchivo(form) {
+        fetch('/subir-archivo', {
+            method: 'POST',
+            body: new FormData(form)
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('mensaje-exito').textContent = data.mensaje;
+            document.getElementById('mensaje-exito').style.display = 'block';
+        });
+    }
+
+     // Función para obtener los archivos de una mascota
+    async function cargarArchivos(id_mascota) {
+        try {
+            const response = await fetch(`/api/archivos/${id_mascota}`);
+            const archivos = await response.json();
+            const archivosDropdown = document.getElementById('archivosDropdown');
+            archivosDropdown.innerHTML = '<option value="">Seleccione un archivo</option>';
+            archivos.forEach(archivo => {
+                const option = document.createElement('option');
+                option.value = archivo.id_archivo;
+                option.textContent = archivo.nombre_archivo;
+                archivosDropdown.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error al cargar archivos:', error);
         }
     }
 
-    function eliminarArchivo(id_archivo) {
-        if (confirm("¿Estás seguro de que quieres eliminar este archivo?")) {
-            fetch(`/eliminar-archivo/${id_archivo}`, {
+
+    
+    // Mostrar botón de eliminar al seleccionar un archivo o foto
+    function mostrarEliminar(tipo) {
+        const eliminarBtn = tipo === 'archivo' ? document.getElementById('eliminarArchivoBtn') : document.getElementById('eliminarFotoBtn');
+        const dropdown = tipo === 'archivo' ? document.getElementById('archivosDropdown') : document.getElementById('fotosDropdown');
+        eliminarBtn.style.display = dropdown.value ? 'block' : 'none';
+    }
+
+    // Función para eliminar archivos o fotos
+    async function eliminar(tipo) {
+        const id = tipo === 'archivo' ? document.getElementById('archivosDropdown').value : document.getElementById('fotosDropdown').value;
+        if (!id) return alert('Seleccione un elemento para eliminar');
+
+        const confirmacion = confirm(`¿Está seguro de que desea eliminar este ${tipo}?`);
+        if (!confirmacion) return;
+
+        try {
+            const response = await fetch(`/api/eliminar/${tipo}/${id}`, {
                 method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Si se elimina exitosamente, actualiza la página o remueve el archivo
-                    location.reload();  // Recarga la página para ver los cambios
-                } else {
-                    alert("Hubo un error al eliminar el archivo");
-                }
-            })
-            .catch(error => console.error('Error:', error));
+            });
+            const resultado = await response.json();
+            if (response.ok) {
+                alert(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} eliminado correctamente`);
+                // Recargar los dropdowns
+                const id_mascota = 1; // Cambiar por el ID de la mascota seleccionada
+                cargarArchivos(id_mascota);
+                cargarFotos(id_mascota);
+            } else {
+                alert(`Error al eliminar ${tipo}: ${resultado.error}`);
+            }
+        } catch (error) {
+            console.error('Error al eliminar:', error);
         }
     }
+
+    document.getElementById("form-pdf").onsubmit = async function (e) {
+        e.preventDefault(); // Evita recargar la página
+
+        const formData = new FormData(this);
+        const response = await fetch('/subir-archivo', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const result = await response.json();
+        const mensajeExito = document.getElementById("mensaje-exito");
+
+        if (response.ok) {
+            // Mostrar mensaje de éxito
+            mensajeExito.textContent = result.success;
+            mensajeExito.style.display = "block";
+            mensajeExito.style.color = "green";
+
+            // Mostrar la miniatura del PDF subido
+            mostrarMiniatura(result.filename, result.ruta);
+
+            // Limpiar el formulario y ocultar el mensaje después de 3 segundos
+            document.querySelector("[name='archivo']").value = "";
+            setTimeout(() => { mensajeExito.style.display = "none"; }, 3000);
+        } else {
+            // Mostrar mensaje de error
+            mensajeExito.textContent = result.error;
+            mensajeExito.style.display = "block";
+            mensajeExito.style.color = "red";
+        }
+    };
+
+    // Función para mostrar la miniatura del PDF cargado
+    function mostrarMiniatura(nombre, ruta) {
+        const contenedorPDF = document.querySelector(".pdf-container");
+        const nuevoArchivo = document.createElement("div");
+        nuevoArchivo.classList.add("archivo-item");
+
+        // Agrega un enlace para abrir el PDF en una nueva pestaña
+        nuevoArchivo.innerHTML = `
+            <a href="${ruta}" target="_blank">${nombre}</a>
+        `;
+        contenedorPDF.appendChild(nuevoArchivo);
+    }
+
+    document.getElementById("form-foto").onsubmit = async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const response = await fetch('/subir-foto', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const result = await response.json();
+        const mensajeExitoFoto = document.getElementById("mensaje-exito-foto");
+
+        if (response.ok) {
+            // Mostrar mensaje de éxito
+            mensajeExitoFoto.textContent = result.success;
+            mensajeExitoFoto.style.display = "block";
+            mensajeExitoFoto.style.color = "green";
+
+            // Mostrar la miniatura de la foto subida
+            mostrarMiniaturaFoto(result.filename, result.ruta);
+
+            // Limpiar el formulario y ocultar el mensaje después de 3 segundos
+            document.querySelector("[name='foto']").value = "";
+            setTimeout(() => { mensajeExitoFoto.style.display = "none"; }, 3000);
+        } else {
+            mensajeExitoFoto.textContent = result.error;
+            mensajeExitoFoto.style.display = "block";
+            mensajeExitoFoto.style.color = "red";
+        }
+    };
     
+
+    // Función para mostrar la miniatura de la foto cargada
+    function mostrarMiniaturaFoto(nombre, ruta) {
+        const contenedorFotos = document.querySelector(".foto-container");
+        const nuevaFoto = document.createElement("div");
+        nuevaFoto.classList.add("foto-item");
+
+        // Agrega una imagen en miniatura
+        nuevaFoto.innerHTML = `<img src="${ruta}" alt="${nombre}" width="100">`;
+        contenedorFotos.appendChild(nuevaFoto);
+    }
+
+
+    
+
 </script>
 
 <style>
@@ -847,5 +988,40 @@
 
     .icons-container a:hover {
         background-color: #F57C00;
+    }
+
+    .upload-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 20px; /* Espacio entre formularios */
+        margin-left: 0; /* Alinear con la tabla */
+        margin-top: 20px;
+    }
+
+    .upload-container form {
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        width: 300px; /* Ajusta el ancho si lo prefieres */
+    }
+
+    .upload-container h4 {
+        margin-bottom: 10px;
+    }
+
+    .upload-container .btn {
+        width: 100%; /* Botones más amplios */
+    }
+
+    .archivo-item a {
+        display: inline-block;
+        max-width: 150px; /* Ajusta el ancho según el diseño */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-decoration: none;
+        color: #007bff;
     }
 </style>

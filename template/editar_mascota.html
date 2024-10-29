@@ -1,43 +1,144 @@
 {% include("cabecera.html") %}
 
-<!-- Modal para agregar/editar mascota -->
-<div class="modal fade" id="addMascotaModal" tabindex="-1" role="dialog" aria-labelledby="addMascotaModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addMascotaModalLabel">Agregar Mascota</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="mascota-form" action="/agregar-mascota" method="POST" onsubmit="return validarFormulario()">
-                    <input type="hidden" id="mascota-id" value="">
-                    <div class="form-group">
-                        <label for="nombre">Nombre</label>
-                        <input type="text" class="form-control" id="nombre" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="especie">Especie</label>
-                        <select class="form-control" id="especie" required>
-                            <option value="perro">Perro</option>
-                            <option value="gato">Gato</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="edad">Edad</label>
-                        <input type="number" class="form-control" id="edad" required min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="raza">Raza</label>
-                        <select class="form-control" id="raza" required>
-                            <option value="Chihuahua">Chihuahua</option>
-                            <option value="Gato persa">Gato persa</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                </form>
-            </div>
+<!-- Contenido principal -->
+<div class="container mt-4">
+    <h2 class="text-center text-primary">Editar Mascota</h2>
+
+    <!-- Formulario de edición de la mascota -->
+    <form id="mascota-form" action="{{ url_for('actualizar_mascota', id_mascota=mascota.id_mascota) }}" method="POST" onsubmit="return validarFormulario()">
+        <input type="hidden" id="id_mascota" name="id_mascota" value="{{ mascota.id_mascota }}">
+
+        <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ mascota.nombre }}" required>
         </div>
+        <div class="form-group">
+            <label for="especie">Especie</label>
+            <select class="form-control" id="especie" name="especie" required>
+                <option value="perro" {% if mascota.especie == "perro" %}selected{% endif %}>Perro</option>
+                <option value="gato" {% if mascota.especie == "gato" %}selected{% endif %}>Gato</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="edad">Edad</label>
+            <input type="number" class="form-control" id="edad" name="edad" value="{{ mascota.edad }}" required min="0">
+        </div>
+        <div class="form-group">
+            <label for="raza">Raza</label>
+            <input type="text" class="form-control" id="raza" name="raza" value="{{ mascota.raza }}" required>
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="{{ url_for('premium') }}" class="btn btn-secondary">Volver</a>
+        </div>
+    </form>
+
+    <!-- Mostrar PDF relacionados -->
+    <h4 class="mt-5">Archivos PDF Relacionados</h4>
+    <div class="pdf-container">
+        {% if archivos %}
+            {% for archivo in archivos if archivo.id_mascota == mascota.id_mascota %}
+                <div class="archivo-item">
+                    <a href="{{ archivo.ruta_archivo }}" target="_blank">{{ archivo.nombre_archivo }}</a>
+                    <button class="btn btn-danger btn-sm" onclick="eliminarArchivo('{{ archivo.id_archivo }}')">Eliminar</button>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No hay archivos PDF para esta mascota.</p>
+        {% endif %}
+    </div>
+
+    <!-- Mostrar fotos relacionadas -->
+    <h4 class="mt-5">Fotos Relacionadas</h4>
+    <div class="foto-container">
+        {% if fotos %}
+            {% for foto in fotos if foto.id_mascota == mascota.id_mascota %}
+                <div class="foto-item">
+                    <img src="{{ foto.ruta_foto }}" class="img-thumbnail" alt="Foto de mascota">
+                    <button class="btn btn-danger btn-sm" onclick="eliminarFoto('{{ foto.id_foto }}')">Eliminar</button>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No hay fotos para esta mascota.</p>
+        {% endif %}
     </div>
 </div>
+
+<script>
+    // Función para validar el formulario
+    function validarFormulario() {
+        // Obtener los valores de los campos
+        const nombre = document.getElementById('nombre').value.trim();
+        const especie = document.getElementById('especie').value;
+        const edad = document.getElementById('edad').value;
+        const raza = document.getElementById('raza').value.trim();
+
+        // Validar campos vacíos
+        if (!nombre || !especie || !edad || !raza) {
+            alert('Todos los campos son obligatorios.');
+            return false;
+        }
+
+        // Validar edad como número positivo
+        if (isNaN(edad) || parseInt(edad) < 0) {
+            alert('La edad debe ser un número positivo.');
+            return false;
+        }
+
+        // Si todo está bien
+        return true;
+    }
+
+    // Función para eliminar archivo con llamada AJAX
+    function eliminarArchivo(idArchivo) {
+        if (confirm("¿Estás seguro de eliminar este archivo?")) {
+            fetch(`/eliminar-archivo/${idArchivo}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': "{{ csrf_token() }}"  // Token CSRF si lo utilizas en tu app Flask
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Archivo eliminado correctamente.');
+                    location.reload(); // Recargar la página para reflejar los cambios
+                } else {
+                    alert(`Error al eliminar el archivo: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al eliminar el archivo.');
+            });
+        }
+    }
+
+    // Función para eliminar foto con llamada AJAX
+    function eliminarFoto(idFoto) {
+        if (confirm("¿Estás seguro de eliminar esta foto?")) {
+            fetch(`/eliminar-foto/${idFoto}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': "{{ csrf_token() }}"  // Token CSRF si lo utilizas en tu app Flask
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Foto eliminada correctamente.');
+                    location.reload(); // Recargar la página para reflejar los cambios
+                } else {
+                    alert(`Error al eliminar la foto: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al eliminar la foto.');
+            });
+        }
+    }
+</script>

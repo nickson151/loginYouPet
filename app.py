@@ -260,6 +260,34 @@ def agregar_mascota():
 
 
 
+# Ruta para mostrar el formulario de edición
+@app.route('/editar-mascota/<int:id_mascota>', methods=['GET'])
+def editar_mascota(id_mascota):
+    try:
+        cur = mysql.connection.cursor()
+        # Verificar si la mascota existe y está asociada al usuario actual
+        cur.execute("SELECT * FROM mascotas WHERE id_mascota = %s", (id_mascota,))
+        mascota = cur.fetchone()
+        
+        # Validación de permisos usando id_usuario en la sesión
+        if not mascota:
+            return redirect(url_for('premium'))  # Redirigir si no encuentra la mascota
+        if mascota['id_usuario'] != session['id_usuario']:
+            return redirect(url_for('premium'))  # Redirigir si no es el usuario propietario
+
+        # Obtener las fotos y PDFs asociados a la mascota
+        cur.execute("SELECT * FROM fotos WHERE id_mascota = %s", (id_mascota,))
+        fotos = cur.fetchall()
+        
+        cur.execute("SELECT * FROM archivos WHERE id_mascota = %s", (id_mascota,))
+        archivos = cur.fetchall()
+        
+        cur.close()
+        return render_template('editar_mascota.html', mascota=mascota, fotos=fotos, archivos=archivos)
+    except Exception as e:
+        return redirect(url_for('premium'))  # Redirigir en caso de error
+
+
 # Ruta para actualizar una mascota
 @app.route('/actualizar-mascota/<int:id_mascota>', methods=['POST'])
 def actualizar_mascota(id_mascota):
@@ -282,7 +310,7 @@ def actualizar_mascota(id_mascota):
         # Validación de permisos usando id_usuario en la sesión
         if not resultado:
             return jsonify({'success': False, 'error': 'Mascota no encontrada'}), 404
-        if resultado['id_usuario'] != session['id_usuario']:  # Usa el id de usuario en la sesión
+        if resultado['id_usuario'] != session['id_usuario']:
             return jsonify({'success': False, 'error': 'Acceso denegado'}), 403
 
         # Actualizar la mascota
@@ -294,17 +322,11 @@ def actualizar_mascota(id_mascota):
         mysql.connection.commit()
         cur.close()
 
-        mascota = {
-            'id': id_mascota,
-            'nombre': nombre,
-            'especie': especie,
-            'edad': edad,
-            'raza': raza
-        }
-
-        return jsonify({'success': True, 'mascota': mascota}), 200
+        # Redirigir al usuario a la vista premium o a la vista de edición
+        return redirect(url_for('premium'))  # O redirigir de nuevo al formulario de edición con url_for('editar_mascota', id_mascota=id_mascota)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 
@@ -583,81 +605,80 @@ def subir_archivo():
     if not id_usuario:
         return jsonify({'error': 'Usuario no autenticado'}), 401
 
-    if 'archivo' not in request.files:
+    if 'archivo' not in request.files or request.files['archivo'].filename == '':
         return jsonify({'error': 'No se seleccionó ningún archivo'}), 400
-    
-    archivo = request.files['archivo']
-    mascota_id = request.form.get('mascota_id')
 
+    mascota_id = request.form.get('mascota_id')
     if not mascota_id:
         return jsonify({'error': 'No se seleccionó ninguna mascota'}), 400
 
-    # Verificar que la mascota pertenece al usuario autenticado
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT id_mascota FROM mascotas WHERE id_usuario = %s AND id_mascota = %s", (id_usuario, mascota_id))
-    mascota = cur.fetchone()
-
-    if not mascota:
-        return jsonify({'error': 'La mascota no pertenece al usuario autenticado'}), 403
-
-    if archivo.filename == '':
-        return jsonify({'error': 'No se seleccionó ningún archivo'}), 400
-
-    if archivo and archivo.filename.endswith('.pdf'):
-        try:
-            # Asegurar el nombre del archivo y guardarlo
-            filename = secure_filename(archivo.filename)
-            ruta_archivo = os.path.join(app.config['UPLOAD_FOLDER_PDF'], filename)
-            archivo.save(ruta_archivo)
-
-            # Guardar la información en la base de datos
-            cur.execute("""
-                INSERT INTO archivos (id_mascota, id_usuario, nombre_archivo, ruta_archivo, fecha_subida)
-                VALUES (%s, %s, %s, %s, %s)
-                """, (mascota_id, id_usuario, filename, ruta_archivo, datetime.now()))
-            mysql.connection.commit()
-            cur.close()
-
-            return jsonify({'success': 'Archivo PDF subido exitosamente'}), 200
-
-        except Exception as e:
-            return jsonify({'error': f'Error al subir el archivo: {str(e)}'}), 500
-    else:
+    archivo = request.files['archivo']
+    if not archivo.filename.endswith('.pdf'):
         return jsonify({'error': 'Formato no permitido. Solo archivos PDF son permitidos.'}), 400
 
+    try:
+        # Verificar que la mascota pertenece al usuario autenticado
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id_mascota FROM mascotas WHERE id_usuario = %s AND id_mascota = %s", (id_usuario, mascota_id))
+        mascota = cur.fetchone()
+
+        if not mascota:
+            return jsonify({'error': 'La mascota no pertenece al usuario autenticado'}), 403
+
+        # Asegurar el nombre del archivo y guardarlo
+        filename = secure_filename(archivo.filename)
+        ruta_archivo = os.path.join(app.config['UPLOAD_FOLDER_PDF'], filename)
+        archivo.save(ruta_archivo)
+
+        # Guardar la información en la base de datos
+        cur.execute("""
+            INSERT INTO archivos (id_mascota, id_usuario, nombre_archivo, ruta_archivo, fecha_subida)
+            VALUES (%s, %s, %s, %s, %s)
+            """, (mascota_id, id_usuario, filename, ruta_archivo, datetime.now()))
+        mysql.connection.commit()
+
+        # Ruta relativa para el frontend
+        ruta_relativa = f"/{ruta_archivo}"
+
+        return jsonify({'success': 'Archivo PDF subido exitosamente', 'filename': filename, 'ruta': ruta_relativa}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Error al subir el archivo: {str(e)}'}), 500
+
+    finally:
+        cur.close()
+    
+
+# Ruta para obtener los archivos de una mascota específica
+@app.route('/api/archivos/<int:id_mascota>', methods=['GET'])
+def obtener_archivos(id_mascota):
+    try:
+        query = "SELECT id_archivo, nombre_archivo FROM archivos WHERE id_mascota = %s"
+        cursor = mysql.connection.cursor()
+        cursor.execute(query, (id_mascota,))
+        archivos = cursor.fetchall()
+        return jsonify(archivos), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
-# Eliminar archivo PDF
-@app.route('/eliminar-archivo/<int:id_archivo>', methods=['DELETE'])
-def eliminar_archivo(id_archivo):
-    id_usuario = session.get('id')
+# Ruta para eliminar archivos o fotos
+@app.route('/api/eliminar/<string:tipo>/<int:id>', methods=['DELETE'])
+def eliminar(tipo, id):
+    try:
+        if tipo == 'archivo':
+            query = "DELETE FROM archivos WHERE id_archivo = %s"
+        elif tipo == 'foto':
+            query = "DELETE FROM fotos WHERE id_foto = %s"
+        else:
+            return jsonify({"error": "Tipo no válido"}), 400
 
-    if not id_usuario:
-        return jsonify({'error': 'Usuario no autenticado'}), 401
-
-    mascota_id = request.form.get('mascota_id')  # Asegúrate de obtener el id_mascota si es necesario.
-
-    # Consulta para asegurarse de que el archivo pertenece al usuario y la mascota
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT * FROM archivos WHERE id_archivo = %s AND id_usuario = %s AND id_mascota = %s
-        """, (id_archivo, id_usuario, mascota_id))
-    archivo = cur.fetchone()
-
-    if not archivo:
-        return jsonify({'error': 'No tienes permiso para eliminar este archivo'}), 403
-
-    # Eliminar archivo de la base de datos
-    cur.execute("DELETE FROM archivos WHERE id_archivo = %s", (id_archivo,))
-    mysql.connection.commit()
-    cur.close()
-
-    # Opcional: eliminar el archivo del sistema de archivos
-    if os.path.exists(archivo['ruta_archivo']):
-        os.remove(archivo['ruta_archivo'])
-
-    return jsonify({'success': 'Archivo eliminado exitosamente'}), 200
-
+        cursor = mysql.connection.cursor()
+        cursor.execute(query, (id,))
+        mysql.connection.commit()
+        return jsonify({"message": f"{tipo.capitalize()} eliminado correctamente"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # Ruta de subida de fotos
@@ -713,6 +734,20 @@ def subir_fotos():
 
     return jsonify({'success': 'Fotos subidas exitosamente'}), 200
 
+
+
+# Ruta para obtener las fotos de una mascota específica
+@app.route('/api/fotos/<int:id_mascota>', methods=['GET'])
+def obtener_fotos(id_mascota):
+    try:
+        query = "SELECT id_foto, ruta_foto FROM fotos WHERE id_mascota = %s"
+        cursor = mysql.connection.cursor()
+        cursor.execute(query, (id_mascota,))
+        fotos = cursor.fetchall()
+        return jsonify(fotos), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+        
 
 # Eliminar foto
 @app.route('/eliminar-foto/<int:id_foto>', methods=['DELETE'])
